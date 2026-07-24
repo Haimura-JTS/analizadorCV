@@ -20,3 +20,7 @@ La aplicacion usara una arquitectura modular. La interfaz llamara a un pipeline 
 Existe el modulo inicial de lectura de PDF. Puede devolver solo texto mediante
 `extract_text_from_pdf()` o texto con metadatos tecnicos mediante
 `read_pdf_text()`.
+
+En la Etapa 3 se anaden modulos independientes para preparar el texto,
+extraer contacto, aplicar una heuristica inicial de nombre/titulo y construir
+un JSON basico. Todavia no existe pipeline completo.

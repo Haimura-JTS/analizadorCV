@@ -13,6 +13,10 @@ Comprobar cada modulo de forma independiente antes de integrarlo en el pipeline.
 - Error al recibir una ruta que apunta a un directorio.
 - Error al superar el tamano maximo configurado.
 - Error controlado ante contenido PDF dañado o falso.
+- Limpieza de espacios y lineas vacias.
+- Extraccion de correo, telefono, LinkedIn, GitHub y portfolio.
+- Estrategia inicial para nombre y titulo profesional.
+- Construccion de JSON basico serializable.
 
 ## Limitacion actual
 

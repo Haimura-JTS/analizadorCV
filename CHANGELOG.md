@@ -7,3 +7,5 @@
 - Se anade una primera funcion para extraer texto de PDF.
 - Se refuerza la validacion de PDF con tamano maximo, rutas invalidas,
   documentos protegidos, documentos vacios y errores de lectura controlados.
+- Se anaden limpieza de texto, extraccion de contacto, heuristica inicial de
+  datos personales y construccion de JSON basico.
