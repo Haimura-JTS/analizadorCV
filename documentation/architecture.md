@@ -17,5 +17,6 @@ La aplicacion usara una arquitectura modular. La interfaz llamara a un pipeline 
 
 ## Estado actual
 
-Solo existe el modulo inicial de lectura de PDF.
-
+Existe el modulo inicial de lectura de PDF. Puede devolver solo texto mediante
+`extract_text_from_pdf()` o texto con metadatos tecnicos mediante
+`read_pdf_text()`.

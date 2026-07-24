@@ -14,10 +14,17 @@ class InvalidFileTypeError(CVAnalyzerError):
     """Se lanza cuando el archivo recibido no tiene extension PDF."""
 
 
+class FileTooLargeError(CVAnalyzerError):
+    """Se lanza cuando el archivo supera el tamano maximo permitido."""
+
+
 class EmptyDocumentError(CVAnalyzerError):
     """Se lanza cuando el documento no contiene texto extraible."""
 
 
+class ProtectedPDFError(CVAnalyzerError):
+    """Se lanza cuando el PDF requiere contraseña."""
+
+
 class PDFReadError(CVAnalyzerError):
     """Se lanza cuando el PDF no puede abrirse o leerse correctamente."""
-
