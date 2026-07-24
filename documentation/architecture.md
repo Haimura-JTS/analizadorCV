@@ -6,7 +6,7 @@ La aplicacion usara una arquitectura modular. La interfaz llamara a un pipeline 
 
 ## Flujo implementado
 
-1. La interfaz entrega una ruta a `process_cv_file()`.
+1. La interfaz entrega una ruta a `process_cv_file_with_details()`.
 2. `pdf_reader` valida y extrae texto y metadatos.
 3. `text_cleaner` normaliza el contenido.
 4. `section_detector` agrupa las lineas.
@@ -45,3 +45,23 @@ Los errores esperados de archivo se convierten en mensajes de
 `metadata.errors`. Los fallos inesperados conservan su traza en el registro
 tecnico y devuelven un mensaje generico. En ambos casos se valida la salida con
 el mismo modelo Pydantic.
+
+En la Etapa 8 se anade `app.py` como capa de presentacion Streamlit. La
+interfaz solo gestiona carga, estado, vistas y descarga. Delega el
+procesamiento en `process_cv_file_with_details()`, que mantiene la
+compatibilidad de `process_cv_file()` y evita una segunda lectura para mostrar
+el texto.
+
+`ui_helpers.py` aisla la creacion y eliminacion de copias temporales, el nombre
+de descarga, la serializacion JSON y el formato del tamano. La configuracion de
+tema, privacidad del cliente y limite de carga vive en
+`.streamlit/config.toml`.
+
+## Flujo de interfaz
+
+1. Streamlit recibe un unico PDF de hasta 10 MB.
+2. La carga se escribe con un nombre saneado dentro de un directorio temporal.
+3. El pipeline produce texto y resultado estructurado.
+4. La copia temporal se elimina al salir del contexto, tambien ante errores.
+5. La interfaz conserva texto y resultado en el estado de la sesion.
+6. El usuario revisa las vistas y descarga el JSON serializado.

@@ -32,8 +32,16 @@ Comprobar cada modulo de forma independiente antes de integrarlo en el pipeline.
 - Salida valida ante errores esperados de archivo.
 - Mensaje publico controlado y registro tecnico ante fallos inesperados.
 - Sustitucion de resultados intermedios invalidos por una salida contractual.
+- Respuesta detallada del pipeline con texto y JSON en una unica lectura.
+- Creacion y eliminacion de archivos temporales de interfaz.
+- Saneamiento de nombres de archivo para rutas y caracteres no validos.
+- Serializacion JSON Unicode y construccion del nombre de descarga.
+- Formato visual de tamanos de archivo.
+- Arranque simulado de la interfaz y presencia del flujo de carga mediante
+  `streamlit.testing.v1.AppTest`.
 
 ## Limitacion actual
 
 Las pruebas estan implementadas, pero no se han podido ejecutar porque Python
-no esta disponible en PATH en el entorno actual.
+no esta disponible en PATH en el entorno actual. Por el mismo motivo tampoco se
+ha podido iniciar Streamlit para realizar una inspeccion visual en navegador.

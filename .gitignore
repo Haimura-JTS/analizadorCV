@@ -4,9 +4,9 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .env
+.streamlit/secrets.toml
 output/
 examples/input/*
 examples/output/*
 *.log
 *.pyc
-

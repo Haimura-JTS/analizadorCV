@@ -5,6 +5,7 @@ Coordina lectura, limpieza, deteccion, extraccion, construccion y validacion.
 Los detalles de cada operacion permanecen en sus modulos especializados.
 """
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
@@ -35,6 +36,20 @@ from cv_analyzer.validators import validate_cv_result_schema
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class CVProcessingOutput:
+    """
+    Resultado del pipeline para consumidores que necesitan texto y JSON.
+
+    Args:
+        data: Resultado estructurado que cumple el contrato del proyecto.
+        extracted_text: Texto original extraido o None si la lectura fallo.
+    """
+
+    data: dict[str, object]
+    extracted_text: str | None
+
+
 def process_cv_file(file_path: str | Path) -> dict[str, object]:
     """
     Procesa un archivo PDF y devuelve siempre el contrato JSON del proyecto.
@@ -48,6 +63,24 @@ def process_cv_file(file_path: str | Path) -> dict[str, object]:
 
     Returns:
         Resultado completo y serializable del procesamiento.
+    """
+    return process_cv_file_with_details(file_path).data
+
+
+def process_cv_file_with_details(
+    file_path: str | Path,
+) -> CVProcessingOutput:
+    """
+    Procesa un PDF y conserva el texto para clientes de presentacion.
+
+    Esta variante evita que una interfaz tenga que leer el documento por
+    segunda vez. Mantiene el mismo manejo de errores que `process_cv_file()`.
+
+    Args:
+        file_path: Ruta del curriculum en formato PDF.
+
+    Returns:
+        Resultado estructurado junto con el texto extraido disponible.
     """
     source_file = _source_file_name(file_path)
     pdf_result: PDFTextExtractionResult | None = None
@@ -64,20 +97,26 @@ def process_cv_file(file_path: str | Path) -> dict[str, object]:
             source_file,
             error_message,
         )
-        return _build_failure_result(
-            source_file=source_file,
-            errors=[error_message],
-            pdf_result=pdf_result,
+        return CVProcessingOutput(
+            data=_build_failure_result(
+                source_file=source_file,
+                errors=[error_message],
+                pdf_result=pdf_result,
+            ),
+            extracted_text=_extracted_text(pdf_result),
         )
     except Exception:
         logger.exception(
             "Fallo inesperado al procesar el CV %s.",
             source_file,
         )
-        return _build_failure_result(
-            source_file=source_file,
-            errors=[UNEXPECTED_PROCESSING_ERROR_MESSAGE],
-            pdf_result=pdf_result,
+        return CVProcessingOutput(
+            data=_build_failure_result(
+                source_file=source_file,
+                errors=[UNEXPECTED_PROCESSING_ERROR_MESSAGE],
+                pdf_result=pdf_result,
+            ),
+            extracted_text=_extracted_text(pdf_result),
         )
 
     if _was_processed_successfully(result):
@@ -86,7 +125,10 @@ def process_cv_file(file_path: str | Path) -> dict[str, object]:
             source_file,
             pdf_result.page_count,
         )
-    return result
+    return CVProcessingOutput(
+        data=result,
+        extracted_text=pdf_result.text,
+    )
 
 
 def _process_extracted_pdf(
@@ -187,6 +229,12 @@ def _was_processed_successfully(result: dict[str, object]) -> bool:
         isinstance(metadata, dict)
         and metadata.get("processed_successfully") is True
     )
+
+
+def _extracted_text(
+    pdf_result: PDFTextExtractionResult | None,
+) -> str | None:
+    return pdf_result.text if pdf_result is not None else None
 
 
 def _merge_unique_messages(messages: list[str]) -> list[str]:

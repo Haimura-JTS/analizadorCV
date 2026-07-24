@@ -11,6 +11,7 @@ from cv_analyzer.exceptions import InvalidFileTypeError
 from cv_analyzer.models import CVResultModel
 from cv_analyzer.pdf_reader import PDFTextExtractionResult
 from cv_analyzer.pipeline import process_cv_file
+from cv_analyzer.pipeline import process_cv_file_with_details
 
 
 CV_TEXT = """\
@@ -55,9 +56,11 @@ def test_process_cv_file_connects_the_complete_flow(
         lambda _: _pdf_result(),
     )
 
-    result = process_cv_file(Path("ana-garcia.pdf"))
+    output = process_cv_file_with_details(Path("ana-garcia.pdf"))
+    result = output.data
 
     CVResultModel.model_validate(result)
+    assert output.extracted_text == CV_TEXT
     assert result["personal_data"]["full_name"] == "Ana Garcia"
     assert result["personal_data"]["professional_title"] == (
         "Backend Developer"

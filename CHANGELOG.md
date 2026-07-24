@@ -19,3 +19,9 @@
   tecnico, manejo centralizado de errores y salida JSON consistente.
 - Se anaden pruebas de integracion para recorridos correctos, errores de
   archivo, fallos inesperados y resultados intermedios invalidos.
+- Se anade una interfaz Streamlit con carga por seleccion o arrastre, estado
+  del procesamiento, vistas de resumen, texto y JSON, y descarga del resultado.
+- Se incorpora una respuesta detallada del pipeline para reutilizar el texto
+  extraido sin leer dos veces el PDF.
+- Se anaden manejo seguro de archivos temporales, configuracion visual y
+  pruebas unitarias de los helpers de presentacion.

@@ -1,0 +1,19 @@
+[theme]
+primaryColor = "#0F766E"
+backgroundColor = "#F7F9F8"
+secondaryBackgroundColor = "#EDF2F0"
+textColor = "#18221F"
+font = "sans-serif"
+baseRadius = "small"
+buttonRadius = "small"
+
+[server]
+maxUploadSize = 10
+
+[client]
+showErrorDetails = "none"
+showErrorLinks = false
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

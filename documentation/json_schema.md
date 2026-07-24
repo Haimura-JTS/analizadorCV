@@ -46,3 +46,10 @@ La salida mantiene el contrato aun cuando falle el procesamiento:
 - `errors` contiene al menos un mensaje controlado;
 - las secciones no disponibles conservan sus valores nulos o listas vacias;
 - los metadatos conocidos antes del fallo se mantienen.
+
+## Etapa 8
+
+La interfaz descarga exactamente el diccionario validado por el pipeline como
+JSON UTF-8 indentado. El texto extraido se transporta en
+`CVProcessingOutput.extracted_text` para su visualizacion, pero no se anade al
+contrato JSON ni duplica contenido en `metadata`.
