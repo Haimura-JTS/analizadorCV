@@ -28,7 +28,12 @@ Comprobar cada modulo de forma independiente antes de integrarlo en el pipeline.
 - Deteccion de rangos actuales.
 - Validacion del esquema JSON mediante Pydantic.
 - Advertencias por campos ausentes e inconsistencias de fechas.
+- Integracion completa desde la lectura simulada del PDF hasta el JSON final.
+- Salida valida ante errores esperados de archivo.
+- Mensaje publico controlado y registro tecnico ante fallos inesperados.
+- Sustitucion de resultados intermedios invalidos por una salida contractual.
 
 ## Limitacion actual
 
-No se han podido ejecutar pruebas porque Python no esta disponible en PATH en el entorno actual.
+Las pruebas estan implementadas, pero no se han podido ejecutar porque Python
+no esta disponible en PATH en el entorno actual.

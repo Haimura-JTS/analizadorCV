@@ -34,3 +34,15 @@ original se conserva en `description` o `name`.
 El esquema se valida con Pydantic. Las fechas normalizadas usan `YYYY-MM`
 cuando hay mes y ano, `YYYY` cuando solo hay ano y `null` cuando el formato es
 ambiguo. Las advertencias se registran en `metadata.warnings`.
+
+## Etapa 7
+
+El pipeline completa `source_file`, `file_size_bytes`, `page_count` y
+`processed_at`. La marca temporal se expresa en ISO 8601 con zona UTC.
+
+La salida mantiene el contrato aun cuando falle el procesamiento:
+
+- `processed_successfully` pasa a `false`;
+- `errors` contiene al menos un mensaje controlado;
+- las secciones no disponibles conservan sus valores nulos o listas vacias;
+- los metadatos conocidos antes del fallo se mantienen.

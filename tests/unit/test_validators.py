@@ -86,3 +86,30 @@ def test_validate_and_annotate_cv_result_normalizes_date_ranges() -> None:
     assert report.data["experience"][0]["start_date"] == "2023-01"
     assert report.data["experience"][0]["end_date"] is None
     assert report.data["experience"][0]["current"] is True
+
+
+def test_validate_and_annotate_cv_result_preserves_existing_errors() -> None:
+    result = build_structured_cv_result(
+        full_name=None,
+        professional_title=None,
+        contact=ContactInfo(),
+        education=[],
+        experience=[],
+        skills={
+            "technical": [],
+            "tools": [],
+            "programming_languages": [],
+            "soft_skills": [],
+        },
+        languages=[],
+        certifications=[],
+        courses=[],
+        projects=[],
+        unclassified_text=[],
+    )
+    result["metadata"]["errors"] = ["Fallo previo controlado."]
+
+    report = validate_and_annotate_cv_result(result)
+
+    assert report.errors == ["Fallo previo controlado."]
+    assert report.data["metadata"]["processed_successfully"] is False

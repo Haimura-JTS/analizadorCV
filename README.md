@@ -23,7 +23,8 @@ El proyecto se desarrollara por etapas. La primera version se centrara en:
 
 ## Estado actual
 
-Etapa 1 en preparacion: estructura minima, dependencias y primera lectura de PDF.
+Etapa 7 completada: el pipeline conecta lectura, limpieza, deteccion de
+secciones, extractores, normalizacion y validacion del resultado.
 
 ## Instalacion prevista
 
@@ -39,10 +40,21 @@ pip install -r requirements.txt
 pytest
 ```
 
+## Uso del pipeline
+
+```python
+from cv_analyzer.pipeline import process_cv_file
+
+result = process_cv_file("curriculum.pdf")
+```
+
+La funcion devuelve siempre el contrato JSON del proyecto. Cuando el archivo
+no puede procesarse, `metadata.processed_successfully` vale `false` y el motivo
+queda registrado en `metadata.errors`.
+
 ## Limitaciones actuales
 
 - No hay interfaz grafica todavia.
-- No hay extraccion estructurada de datos personales.
-- No hay deteccion de secciones implementada en esta etapa.
+- Las heuristicas de experiencia y formacion todavia agrupan cada seccion como
+  un unico bloque.
 - Los PDF escaneados sin capa de texto no se procesan mediante OCR.
-

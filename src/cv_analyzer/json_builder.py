@@ -80,6 +80,11 @@ def build_structured_cv_result(
     projects: list[ProjectEntry],
     unclassified_text: list[str],
     warnings: list[str] | None = None,
+    summary: str | None = None,
+    source_file: str | None = None,
+    file_size_bytes: int | None = None,
+    page_count: int | None = None,
+    processed_at: str | None = None,
 ) -> dict[str, object]:
     """
     Construye el resultado JSON con secciones ya extraidas.
@@ -97,6 +102,11 @@ def build_structured_cv_result(
         projects: Proyectos detectados.
         unclassified_text: Lineas sin clasificar.
         warnings: Advertencias generadas durante el procesamiento.
+        summary: Resumen o perfil profesional detectado.
+        source_file: Nombre del archivo procesado.
+        file_size_bytes: Tamano del archivo en bytes.
+        page_count: Numero de paginas del documento.
+        processed_at: Fecha y hora ISO 8601 del procesamiento.
 
     Returns:
         Diccionario compatible con JSON.
@@ -106,7 +116,7 @@ def build_structured_cv_result(
             "full_name": full_name,
             "professional_title": professional_title,
             "location": None,
-            "summary": None,
+            "summary": summary,
         },
         "contact": contact.to_dict(),
         "education": [entry.to_dict() for entry in education],
@@ -117,10 +127,10 @@ def build_structured_cv_result(
         "courses": [entry.to_dict() for entry in courses],
         "projects": [entry.to_dict() for entry in projects],
         "metadata": {
-            "source_file": None,
-            "file_size_bytes": None,
-            "page_count": None,
-            "processed_at": None,
+            "source_file": source_file,
+            "file_size_bytes": file_size_bytes,
+            "page_count": page_count,
+            "processed_at": processed_at,
             "processed_successfully": True,
             "processing_version": "1.0",
             "warnings": warnings or [],
@@ -128,3 +138,51 @@ def build_structured_cv_result(
             "unclassified_text": unclassified_text,
         },
     }
+
+
+def build_failed_cv_result(
+    *,
+    source_file: str | None,
+    errors: list[str],
+    processed_at: str,
+    file_size_bytes: int | None = None,
+    page_count: int | None = None,
+    warnings: list[str] | None = None,
+) -> dict[str, object]:
+    """
+    Construye una salida completa para un procesamiento fallido.
+
+    Args:
+        source_file: Nombre del archivo que se intento procesar.
+        errors: Errores controlados que impidieron completar el analisis.
+        processed_at: Fecha y hora ISO 8601 del intento.
+        file_size_bytes: Tamano conocido del archivo, si esta disponible.
+        page_count: Numero de paginas conocido, si esta disponible.
+        warnings: Advertencias recopiladas antes del fallo.
+
+    Returns:
+        Diccionario con el mismo contrato JSON que un resultado correcto.
+    """
+    result = build_basic_cv_result(
+        full_name=None,
+        professional_title=None,
+        contact=ContactInfo(),
+        unclassified_text=[],
+    )
+    metadata = result["metadata"]
+
+    if not isinstance(metadata, dict):
+        raise TypeError("El constructor genero metadata invalida.")
+
+    metadata.update(
+        {
+            "source_file": source_file,
+            "file_size_bytes": file_size_bytes,
+            "page_count": page_count,
+            "processed_at": processed_at,
+            "processed_successfully": False,
+            "warnings": list(warnings or []),
+            "errors": list(errors),
+        }
+    )
+    return result

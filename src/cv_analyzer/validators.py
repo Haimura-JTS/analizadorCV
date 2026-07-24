@@ -84,7 +84,9 @@ def validate_and_annotate_cv_result(
         _as_string_list(metadata.get("errors")),
         errors,
     )
-    metadata["processed_successfully"] = not errors
+    metadata["processed_successfully"] = not _as_string_list(
+        metadata["errors"]
+    )
 
     return CVValidationReport(
         data=annotated_data,

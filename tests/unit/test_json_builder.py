@@ -2,6 +2,7 @@ from cv_analyzer.contact_extractor import ContactInfo
 from cv_analyzer.education_extractor import EducationEntry
 from cv_analyzer.experience_extractor import ExperienceEntry
 from cv_analyzer.json_builder import build_basic_cv_result
+from cv_analyzer.json_builder import build_failed_cv_result
 from cv_analyzer.json_builder import build_structured_cv_result
 
 
@@ -46,3 +47,19 @@ def test_build_structured_cv_result_includes_extracted_sections() -> None:
     assert result["metadata"]["warnings"] == [
         "Seccion duplicada detectada: experience."
     ]
+
+
+def test_build_failed_cv_result_keeps_complete_contract() -> None:
+    result = build_failed_cv_result(
+        source_file="cv.pdf",
+        errors=["No se pudo leer el PDF."],
+        processed_at="2026-07-24T10:00:00+00:00",
+        file_size_bytes=512,
+    )
+
+    assert result["personal_data"]["full_name"] is None
+    assert result["experience"] == []
+    assert result["metadata"]["source_file"] == "cv.pdf"
+    assert result["metadata"]["file_size_bytes"] == 512
+    assert result["metadata"]["processed_successfully"] is False
+    assert result["metadata"]["errors"] == ["No se pudo leer el PDF."]

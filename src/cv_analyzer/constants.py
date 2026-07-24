@@ -10,3 +10,9 @@ PDF_EMPTY_TEXT_MESSAGE = "El PDF no contiene texto extraible."
 PDF_PROTECTED_MESSAGE = (
     "El PDF esta protegido y no puede procesarse sin contrasena."
 )
+INVALID_RESULT_MESSAGE = (
+    "El resultado generado no cumple el contrato JSON esperado."
+)
+UNEXPECTED_PROCESSING_ERROR_MESSAGE = (
+    "Ocurrio un error interno durante el procesamiento del CV."
+)

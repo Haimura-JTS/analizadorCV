@@ -15,3 +15,7 @@
   idiomas, certificaciones, cursos y proyectos.
 - Se anaden normalizacion de fechas, modelos Pydantic y validacion con
   advertencias.
+- Se conecta el flujo completo mediante un pipeline con metadatos, registro
+  tecnico, manejo centralizado de errores y salida JSON consistente.
+- Se anaden pruebas de integracion para recorridos correctos, errores de
+  archivo, fallos inesperados y resultados intermedios invalidos.
