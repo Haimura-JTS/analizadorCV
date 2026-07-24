@@ -22,3 +22,9 @@ El texto previo al primer encabezado se conserva como `unclassified`. Las
 secciones detectadas podran alimentar los bloques `education`, `experience`,
 `skills`, `languages`, `certifications`, `courses` y `projects` en etapas
 posteriores.
+
+## Etapa 5
+
+Las secciones detectadas se convierten en objetos iniciales. Cuando no hay
+certeza suficiente, los campos especificos quedan como `null` y el contenido
+original se conserva en `description` o `name`.

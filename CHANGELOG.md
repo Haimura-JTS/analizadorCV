@@ -11,3 +11,5 @@
   datos personales y construccion de JSON basico.
 - Se anade deteccion de secciones principales con aliases en espanol e ingles,
   texto no clasificado y advertencias por secciones duplicadas.
+- Se anaden extractores iniciales para experiencia, formacion, habilidades,
+  idiomas, certificaciones, cursos y proyectos.

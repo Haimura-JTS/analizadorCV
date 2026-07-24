@@ -27,3 +27,7 @@ un JSON basico. Todavia no existe pipeline completo.
 
 En la Etapa 4 se anade `section_detector.py`, responsable de agrupar lineas
 limpias en secciones principales sin extraer aun objetos estructurados.
+
+En la Etapa 5 se anaden extractores iniciales para experiencia, formacion,
+habilidades y secciones adicionales. Estos extractores son conservadores:
+preservan contenido y dejan campos ambiguos como `None`.

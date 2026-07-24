@@ -21,6 +21,9 @@ Comprobar cada modulo de forma independiente antes de integrarlo en el pipeline.
 - Deteccion de secciones principales en espanol e ingles.
 - Conservacion de texto no clasificado.
 - Acumulacion de secciones duplicadas con advertencias.
+- Extraccion inicial de experiencia y formacion conservando descripciones.
+- Separacion y deduplicacion de habilidades.
+- Extraccion inicial de idiomas, certificaciones, cursos y proyectos.
 
 ## Limitacion actual
 
