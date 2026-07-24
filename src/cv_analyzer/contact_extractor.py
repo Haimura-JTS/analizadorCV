@@ -7,6 +7,7 @@ portfolio personal mediante expresiones regulares explicitas.
 No valida identidad, no consulta servicios externos y no inventa datos ausentes.
 """
 
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass
 import re
 
@@ -84,8 +85,7 @@ def _normalize_url(url: str) -> str:
 
 
 def _find_url_containing(text: str, marker: str) -> str | None:
-    for match in URL_PATTERN.finditer(text):
-        url = match.group(0)
+    for url in _iter_standalone_urls(text):
         if marker in url.lower():
             return _normalize_url(url)
     return None
@@ -127,16 +127,24 @@ def extract_portfolio(text: str) -> str | None:
     Returns:
         URL normalizada o None.
     """
-    for match in URL_PATTERN.finditer(text):
-        url = match.group(0)
+    for url in _iter_standalone_urls(text):
         lowered_url = url.lower()
-        previous_character = text[match.start() - 1] if match.start() > 0 else ""
 
         if "linkedin.com" not in lowered_url and "github.com" not in lowered_url:
-            if previous_character == "@":
-                continue
             return _normalize_url(url)
     return None
+
+
+def _iter_standalone_urls(text: str) -> Iterator[str]:
+    email_spans = [match.span() for match in EMAIL_PATTERN.finditer(text)]
+
+    for match in URL_PATTERN.finditer(text):
+        overlaps_email = any(
+            match.start() < email_end and match.end() > email_start
+            for email_start, email_end in email_spans
+        )
+        if not overlaps_email:
+            yield match.group(0)
 
 
 def extract_contact_info(text: str) -> ContactInfo:

@@ -57,6 +57,12 @@ de descarga, la serializacion JSON y el formato del tamano. La configuracion de
 tema, privacidad del cliente y limite de carga vive en
 `.streamlit/config.toml`.
 
+En la Etapa 9 se anaden fixtures que generan PDFs sinteticos durante las
+pruebas. La integracion recorre el lector y el pipeline reales para documentos
+en espanol, ingles, sin encabezados, con secciones duplicadas, vacios,
+corruptos y cifrados. `pytest-cov` mide el nucleo `cv_analyzer` con cobertura
+de ramas y un umbral minimo del 80%.
+
 ## Flujo de interfaz
 
 1. Streamlit recibe un unico PDF de hasta 10 MB.

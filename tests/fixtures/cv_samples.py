@@ -1,0 +1,75 @@
+"""Curriculums ficticios usados en pruebas de integracion."""
+
+
+SPANISH_CV_PAGES = (
+    """\
+Alex Rivera
+Backend Developer
+alex.rivera@example.test
++34 612 345 678
+linkedin.com/in/alex-rivera
+github.com/alex-rivera
+alexrivera.dev
+PERFIL PROFESIONAL
+Desarrollador de servicios web y automatizaciones.
+EXPERIENCIA PROFESIONAL
+Northwind Labs - Backend Developer
+- Desarrollo de APIs en Python
+""",
+    """\
+FORMACION ACADEMICA
+Grado en Ingenieria Informatica
+HABILIDADES
+Python, FastAPI, PostgreSQL
+IDIOMAS
+Ingles - C1
+CERTIFICACIONES
+Python Professional
+CURSOS
+Arquitectura de software
+PROYECTOS
+Analizador de CV
+""",
+)
+
+
+ENGLISH_CV_PAGES = (
+    """\
+Sam Taylor
+Data Analyst
+sam.taylor@example.test
+SUMMARY
+Analyst focused on reliable reporting.
+WORK EXPERIENCE
+Contoso - Data Analyst
+- Built operational dashboards
+EDUCATION
+BSc in Statistics
+TECHNICAL SKILLS
+SQL; Power BI
+LANGUAGES
+English: Native
+""",
+)
+
+
+HEADERLESS_CV_PAGES = (
+    """\
+Taylor Morgan
+taylor.morgan@example.test
+Independent consultant working with Python.
+Available for remote projects.
+""",
+)
+
+
+DUPLICATE_SECTION_CV_PAGES = (
+    """\
+Jordan Lee
+Software Engineer
+EXPERIENCE
+First role retained
+EXPERIENCE
+Second role retained
+""",
+)

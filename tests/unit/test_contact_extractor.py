@@ -28,3 +28,15 @@ def test_extract_contact_info_returns_none_for_missing_values() -> None:
     assert contact.github is None
     assert contact.portfolio is None
 
+
+def test_extract_contact_info_does_not_treat_email_fragments_as_urls() -> None:
+    contact = extract_contact_info(
+        "alex.rivera@example.test\n"
+        "linkedin.com/in/alex-rivera\n"
+        "github.com/alex-rivera\n"
+        "alexrivera.dev"
+    )
+
+    assert contact.linkedin == "https://linkedin.com/in/alex-rivera"
+    assert contact.github == "https://github.com/alex-rivera"
+    assert contact.portfolio == "https://alexrivera.dev"

@@ -25,3 +25,11 @@
   extraido sin leer dos veces el PDF.
 - Se anaden manejo seguro de archivos temporales, configuracion visual y
   pruebas unitarias de los helpers de presentacion.
+- Se incorporan PDFs sinteticos para probar el pipeline real en espanol e
+  ingles, documentos sin encabezados y secciones duplicadas.
+- Se anaden casos controlados para PDFs vacios, corruptos y protegidos, con
+  validacion del mismo contrato JSON en resultados correctos y fallidos.
+- Se corrigen falsos positivos que trataban datos de contacto como titulo
+  profesional o fragmentos de correo como portfolio.
+- Se configura cobertura de ramas con un umbral del 80% y se documentan las
+  limitaciones conocidas.

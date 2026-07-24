@@ -2,46 +2,74 @@
 
 ## Objetivo
 
-Comprobar cada modulo de forma independiente antes de integrarlo en el pipeline.
+Verificar los modulos de forma aislada y recorrer el pipeline completo con
+PDFs reales generados durante las pruebas. Todos los datos usados son
+ficticios.
 
-## Pruebas iniciales
+## Ejecucion
 
-- Validacion de extension PDF.
-- Error al recibir un archivo inexistente.
-- Error cuando el PDF no contiene texto extraible.
-- Extraccion de texto desde un PDF valido.
-- Error al recibir una ruta que apunta a un directorio.
-- Error al superar el tamano maximo configurado.
-- Error controlado ante contenido PDF dañado o falso.
-- Limpieza de espacios y lineas vacias.
-- Extraccion de correo, telefono, LinkedIn, GitHub y portfolio.
-- Estrategia inicial para nombre y titulo profesional.
-- Construccion de JSON basico serializable.
-- Normalizacion de encabezados con mayusculas, dos puntos y acentos.
-- Deteccion de secciones principales en espanol e ingles.
-- Conservacion de texto no clasificado.
-- Acumulacion de secciones duplicadas con advertencias.
-- Extraccion inicial de experiencia y formacion conservando descripciones.
-- Separacion y deduplicacion de habilidades.
-- Extraccion inicial de idiomas, certificaciones, cursos y proyectos.
-- Normalizacion de fechas en formatos numericos y textuales.
-- Deteccion de rangos actuales.
-- Validacion del esquema JSON mediante Pydantic.
-- Advertencias por campos ausentes e inconsistencias de fechas.
-- Integracion completa desde la lectura simulada del PDF hasta el JSON final.
-- Salida valida ante errores esperados de archivo.
-- Mensaje publico controlado y registro tecnico ante fallos inesperados.
-- Sustitucion de resultados intermedios invalidos por una salida contractual.
-- Respuesta detallada del pipeline con texto y JSON en una unica lectura.
-- Creacion y eliminacion de archivos temporales de interfaz.
-- Saneamiento de nombres de archivo para rutas y caracteres no validos.
-- Serializacion JSON Unicode y construccion del nombre de descarga.
-- Formato visual de tamanos de archivo.
-- Arranque simulado de la interfaz y presencia del flujo de carga mediante
-  `streamlit.testing.v1.AppTest`.
+La instalacion de desarrollo incluye `pytest` y `pytest-cov`.
 
-## Limitacion actual
+```powershell
+python -m pytest
+```
 
-Las pruebas estan implementadas, pero no se han podido ejecutar porque Python
-no esta disponible en PATH en el entorno actual. Por el mismo motivo tampoco se
-ha podido iniciar Streamlit para realizar una inspeccion visual en navegador.
+Comandos utiles para aislar una capa:
+
+```powershell
+python -m pytest tests/unit
+python -m pytest tests/integration
+python -m pytest tests/integration/test_real_pdf_pipeline.py
+```
+
+La ejecucion general mide ramas y lineas de `cv_analyzer`, muestra las lineas
+sin cubrir y exige un minimo del 80%. Las pruebas de Streamlit se ejecutan,
+pero `app.py` no forma parte de ese umbral del nucleo.
+
+## Cobertura funcional
+
+La suite contiene 63 funciones de prueba, ademas de las variantes generadas
+por casos parametrizados. Cubre:
+
+- validacion de extension, existencia, tipo y tamano del archivo;
+- PDFs textuales validos, vacios, corruptos y protegidos;
+- lectura real de documentos de una y varias paginas;
+- limpieza de texto y conservacion de lineas no clasificadas;
+- contacto, nombre y titulo con regresiones contra falsos positivos;
+- encabezados principales en espanol e ingles;
+- acumulacion de secciones duplicadas con advertencia;
+- extractores de experiencia, formacion, habilidades y secciones adicionales;
+- normalizacion y coherencia basica de fechas;
+- construccion y validacion estricta del contrato JSON;
+- errores esperados e inesperados del pipeline;
+- helpers de archivos temporales y serializacion;
+- estados principales de la interfaz mediante `streamlit.testing.v1.AppTest`.
+
+## Casos de integracion reales
+
+`tests/fixtures/pdf_factory.py` construye los documentos dentro de `tmp_path`;
+pytest los elimina al terminar. Los casos incluyen:
+
+- CV completo en espanol distribuido en dos paginas;
+- CV en ingles con aliases de seccion;
+- CV sin encabezados, cuyas lineas deben quedar en `unclassified_text`;
+- secciones duplicadas, cuyo contenido debe acumularse;
+- PDF vacio, corrupto y cifrado.
+
+Todos los recorridos del pipeline, incluidos los fallidos, validan la salida
+con `CVResultModel` y comprueban que pueda serializarse como JSON.
+
+## Conservacion de informacion
+
+La prueba del CV sin encabezados compara todas las lineas de entrada con
+`metadata.unclassified_text`. La prueba de secciones duplicadas comprueba que
+ambos bloques permanezcan en la descripcion y que se emita una advertencia.
+Los encabezados reconocidos se usan como estructura y no se copian como datos.
+
+## Limitacion del entorno
+
+Las pruebas estan implementadas, pero no se han podido ejecutar en esta
+estacion porque Python no esta disponible en `PATH`. Tampoco se ha podido
+iniciar Streamlit para la inspeccion visual. Por ello no se registra un
+porcentaje de cobertura observado; el 80% es el umbral configurado que debera
+confirmar la primera ejecucion con un entorno Python 3.11 o superior.

@@ -23,8 +23,8 @@ El proyecto se desarrollara por etapas. La primera version se centrara en:
 
 ## Estado actual
 
-Etapa 8 completada: la aplicacion dispone de una interfaz Streamlit para
-cargar, procesar, revisar y descargar resultados.
+Etapa 9 implementada: la aplicacion dispone de pruebas unitarias, integracion
+con PDFs sinteticos reales, casos invalidos y control de cobertura.
 
 ## Instalacion
 
@@ -37,8 +37,12 @@ python -m pip install -e ".[dev]"
 ## Pruebas
 
 ```powershell
-pytest
+python -m pytest
 ```
+
+La suite mide cobertura de ramas del paquete `cv_analyzer` y exige un minimo
+del 80%. La estrategia completa se documenta en
+[`documentation/testing.md`](documentation/testing.md).
 
 ## Uso del pipeline
 
@@ -75,3 +79,6 @@ descargar el resultado.
 - Las heuristicas de experiencia y formacion todavia agrupan cada seccion como
   un unico bloque.
 - Los PDF escaneados sin capa de texto no se procesan mediante OCR.
+
+El registro completo esta en
+[`documentation/limitations.md`](documentation/limitations.md).

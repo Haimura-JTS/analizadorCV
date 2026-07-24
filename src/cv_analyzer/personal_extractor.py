@@ -10,6 +10,10 @@ No consulta fuentes externas ni completa informacion ausente.
 from dataclasses import dataclass
 import re
 
+from cv_analyzer.contact_extractor import EMAIL_PATTERN, PHONE_PATTERN
+from cv_analyzer.contact_extractor import URL_PATTERN
+from cv_analyzer.section_detector import find_section_name
+
 
 # Permite nombres compuestos habituales con letras, espacios y separadores
 # simples. No garantiza que la linea sea una identidad real.
@@ -46,7 +50,12 @@ def extract_initial_personal_info(lines: list[str]) -> PersonalInfo:
 
     first_line = lines[0]
     full_name = first_line if _is_probable_name(first_line) else None
-    professional_title = lines[1] if full_name and len(lines) > 1 else None
+    title_candidate = lines[1] if full_name and len(lines) > 1 else None
+    professional_title = (
+        title_candidate
+        if title_candidate and _is_probable_professional_title(title_candidate)
+        else None
+    )
 
     return PersonalInfo(
         full_name=full_name,
@@ -63,3 +72,19 @@ def _is_probable_name(line: str) -> bool:
         return False
 
     return bool(NAME_LIKE_PATTERN.fullmatch(line))
+
+
+def _is_probable_professional_title(line: str) -> bool:
+    cleaned_line = line.strip()
+
+    if not cleaned_line or len(cleaned_line) > 120:
+        return False
+    if find_section_name(cleaned_line) is not None:
+        return False
+    if any(
+        pattern.fullmatch(cleaned_line)
+        for pattern in (EMAIL_PATTERN, PHONE_PATTERN, URL_PATTERN)
+    ):
+        return False
+
+    return True

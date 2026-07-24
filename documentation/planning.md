@@ -6,10 +6,13 @@ El proyecto se desarrollara por etapas para evitar introducir complejidad antes 
 
 ## Etapa actual
 
-Etapa 8 completada: interfaz Streamlit funcional.
+Etapa 9 implementada: pruebas y robustez.
 
-La siguiente etapa prevista es la Etapa 9: pruebas y robustez con distintos
-curriculums.
+Se han incorporado PDFs sinteticos, recorridos reales de integracion, casos
+invalidos, regresiones y un umbral de cobertura. La ejecucion permanece
+pendiente hasta disponer de Python en `PATH`.
+
+La siguiente etapa prevista es la Etapa 10: documentacion y entrega.
 
 ## Riesgos iniciales
 
@@ -20,3 +23,5 @@ curriculums.
   precision multiples experiencias o titulaciones dentro de una misma seccion.
 - La interfaz no ha podido ejecutarse visualmente en el entorno actual porque
   Python no esta disponible en PATH.
+- El umbral de cobertura del 80% no se ha podido medir todavia por la misma
+  limitacion del entorno.

@@ -5,7 +5,9 @@ import pytest
 
 from cv_analyzer.exceptions import EmptyDocumentError, FileTooLargeError
 from cv_analyzer.exceptions import InvalidFileTypeError, PDFReadError
+from cv_analyzer.exceptions import ProtectedPDFError
 from cv_analyzer.pdf_reader import extract_text_from_pdf, read_pdf_text, validate_pdf_file
+from tests.fixtures.pdf_factory import create_encrypted_pdf
 
 
 def test_validate_pdf_file_rejects_non_pdf_extension(tmp_path: Path) -> None:
@@ -82,4 +84,11 @@ def test_read_pdf_text_wraps_invalid_pdf_content(tmp_path: Path) -> None:
     file_path.write_text("esto no es un pdf real", encoding="utf-8")
 
     with pytest.raises(PDFReadError):
+        read_pdf_text(file_path)
+
+
+def test_read_pdf_text_rejects_encrypted_pdf(tmp_path: Path) -> None:
+    file_path = create_encrypted_pdf(tmp_path / "protected.pdf")
+
+    with pytest.raises(ProtectedPDFError):
         read_pdf_text(file_path)
