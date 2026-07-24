@@ -113,7 +113,7 @@ def extract_projects(lines: list[str]) -> list[ProjectEntry]:
 
 
 def _split_name_and_detail(line: str) -> tuple[str | None, str | None]:
-    cleaned_line = line.strip().lstrip("-*• ").strip()
+    cleaned_line = line.strip().lstrip("-*\u2022 ").strip()
     if not cleaned_line:
         return None, None
 
@@ -123,4 +123,3 @@ def _split_name_and_detail(line: str) -> tuple[str | None, str | None]:
             return name.strip() or None, detail.strip() or None
 
     return cleaned_line, None
-

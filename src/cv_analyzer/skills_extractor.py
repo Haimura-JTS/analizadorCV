@@ -39,7 +39,7 @@ def extract_skills(lines: list[str]) -> dict[str, list[str]]:
 
 
 def _split_skill_line(line: str) -> list[str]:
-    normalized_line = line.strip().lstrip("-*• ").strip()
+    normalized_line = line.strip().lstrip("-*\u2022 ").strip()
     return [
         skill.strip()
         for skill in SKILL_SEPARATOR_PATTERN.split(normalized_line)

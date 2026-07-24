@@ -31,3 +31,7 @@ limpias en secciones principales sin extraer aun objetos estructurados.
 En la Etapa 5 se anaden extractores iniciales para experiencia, formacion,
 habilidades y secciones adicionales. Estos extractores son conservadores:
 preservan contenido y dejan campos ambiguos como `None`.
+
+En la Etapa 6 se anaden `date_normalizer.py`, `validators.py` y modelos
+Pydantic en `cv_analyzer.models`. Estas piezas validan el contrato JSON y
+generan advertencias sin cambiar la extraccion existente.

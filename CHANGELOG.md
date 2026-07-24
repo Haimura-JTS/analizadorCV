@@ -13,3 +13,5 @@
   texto no clasificado y advertencias por secciones duplicadas.
 - Se anaden extractores iniciales para experiencia, formacion, habilidades,
   idiomas, certificaciones, cursos y proyectos.
+- Se anaden normalizacion de fechas, modelos Pydantic y validacion con
+  advertencias.

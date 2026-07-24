@@ -62,10 +62,9 @@ def _remove_empty_lines(lines: list[str]) -> list[str]:
 
 
 def _extract_bullet_lines(lines: list[str]) -> list[str]:
-    bullet_prefixes = ("-", "*", "•")
+    bullet_prefixes = ("-", "*", "\u2022")
     return [
-        line.lstrip("-*• ").strip()
+        line.lstrip("-*\u2022 ").strip()
         for line in lines
         if line.lstrip().startswith(bullet_prefixes)
     ]
-

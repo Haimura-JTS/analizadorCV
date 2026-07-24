@@ -24,6 +24,10 @@ Comprobar cada modulo de forma independiente antes de integrarlo en el pipeline.
 - Extraccion inicial de experiencia y formacion conservando descripciones.
 - Separacion y deduplicacion de habilidades.
 - Extraccion inicial de idiomas, certificaciones, cursos y proyectos.
+- Normalizacion de fechas en formatos numericos y textuales.
+- Deteccion de rangos actuales.
+- Validacion del esquema JSON mediante Pydantic.
+- Advertencias por campos ausentes e inconsistencias de fechas.
 
 ## Limitacion actual
 

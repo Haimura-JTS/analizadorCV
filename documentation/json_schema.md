@@ -28,3 +28,9 @@ posteriores.
 Las secciones detectadas se convierten en objetos iniciales. Cuando no hay
 certeza suficiente, los campos especificos quedan como `null` y el contenido
 original se conserva en `description` o `name`.
+
+## Etapa 6
+
+El esquema se valida con Pydantic. Las fechas normalizadas usan `YYYY-MM`
+cuando hay mes y ano, `YYYY` cuando solo hay ano y `null` cuando el formato es
+ambiguo. Las advertencias se registran en `metadata.warnings`.
