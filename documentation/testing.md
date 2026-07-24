@@ -17,6 +17,10 @@ Comprobar cada modulo de forma independiente antes de integrarlo en el pipeline.
 - Extraccion de correo, telefono, LinkedIn, GitHub y portfolio.
 - Estrategia inicial para nombre y titulo profesional.
 - Construccion de JSON basico serializable.
+- Normalizacion de encabezados con mayusculas, dos puntos y acentos.
+- Deteccion de secciones principales en espanol e ingles.
+- Conservacion de texto no clasificado.
+- Acumulacion de secciones duplicadas con advertencias.
 
 ## Limitacion actual
 

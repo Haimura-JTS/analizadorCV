@@ -24,3 +24,6 @@ Existe el modulo inicial de lectura de PDF. Puede devolver solo texto mediante
 En la Etapa 3 se anaden modulos independientes para preparar el texto,
 extraer contacto, aplicar una heuristica inicial de nombre/titulo y construir
 un JSON basico. Todavia no existe pipeline completo.
+
+En la Etapa 4 se anade `section_detector.py`, responsable de agrupar lineas
+limpias en secciones principales sin extraer aun objetos estructurados.

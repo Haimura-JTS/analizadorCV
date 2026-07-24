@@ -15,3 +15,10 @@ El resultado final representara los datos extraidos del curriculum sin inventar 
 La funcion `build_basic_cv_result()` construye una primera version del esquema
 con datos personales iniciales, contacto y listas vacias para bloques que aun
 no se extraen.
+
+## Etapa 4
+
+El texto previo al primer encabezado se conserva como `unclassified`. Las
+secciones detectadas podran alimentar los bloques `education`, `experience`,
+`skills`, `languages`, `certifications`, `courses` y `projects` en etapas
+posteriores.
