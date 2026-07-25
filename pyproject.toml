@@ -6,12 +6,17 @@ build-backend = "setuptools.build_meta"
 name = "analizador-cv"
 version = "0.1.0"
 description = "Aplicacion academica para extraer y estructurar informacion de curriculums PDF."
+readme = "README.md"
 requires-python = ">=3.11"
+license = {file = "LICENSE"}
 dependencies = [
     "PyMuPDF>=1.24,<2",
     "pydantic>=2,<3",
     "streamlit>=1.60,<2",
 ]
+
+[project.urls]
+Repository = "https://github.com/Haimura-JTS/analizadorCV"
 
 [project.optional-dependencies]
 dev = [

@@ -28,7 +28,7 @@ pero `app.py` no forma parte de ese umbral del nucleo.
 
 ## Cobertura funcional
 
-La suite contiene 63 funciones de prueba, ademas de las variantes generadas
+La suite contiene 65 funciones de prueba, ademas de las variantes generadas
 por casos parametrizados. Cubre:
 
 - validacion de extension, existencia, tipo y tamano del archivo;
@@ -43,7 +43,8 @@ por casos parametrizados. Cubre:
 - construccion y validacion estricta del contrato JSON;
 - errores esperados e inesperados del pipeline;
 - helpers de archivos temporales y serializacion;
-- estados principales de la interfaz mediante `streamlit.testing.v1.AppTest`.
+- estados principales de la interfaz mediante `streamlit.testing.v1.AppTest`;
+- validacion y ejecucion del ejemplo incluido en la documentacion.
 
 ## Casos de integracion reales
 
@@ -66,10 +67,16 @@ La prueba del CV sin encabezados compara todas las lineas de entrada con
 ambos bloques permanezcan en la descripcion y que se emita una advertencia.
 Los encabezados reconocidos se usan como estructura y no se copian como datos.
 
-## Limitacion del entorno
+## Resultado verificado
 
-Las pruebas estan implementadas, pero no se han podido ejecutar en esta
-estacion porque Python no esta disponible en `PATH`. Tampoco se ha podido
-iniciar Streamlit para la inspeccion visual. Por ello no se registra un
-porcentaje de cobertura observado; el 80% es el umbral configurado que debera
-confirmar la primera ejecucion con un entorno Python 3.11 o superior.
+La suite se ejecuto con Python 3.13.5 y las dependencias declaradas:
+
+- 75 casos recopilados;
+- 75 casos correctos;
+- 0 fallos;
+- 93,36% de cobertura total;
+- umbral requerido del 80% superado.
+
+La inspeccion interactiva en navegador no pudo completarse desde el navegador
+embebido del entorno. El endpoint de salud de Streamlit respondio correctamente
+y los tres recorridos de interfaz mediante `AppTest` pasaron.

@@ -28,6 +28,7 @@ SECTION_ALIASES: dict[str, set[str]] = {
         "experiencia laboral",
         "experiencia profesional",
         "historial laboral",
+        "experience",
         "work experience",
         "professional experience",
         "employment history",
@@ -184,4 +185,3 @@ def detect_sections_with_warnings(
         sections.setdefault(current_section, []).append(line)
 
     return SectionDetectionResult(sections=sections, warnings=warnings)
-

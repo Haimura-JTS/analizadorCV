@@ -1,55 +1,123 @@
 # Esquema JSON
 
-## Objetivo
+## Contrato
 
-El resultado final representara los datos extraidos del curriculum sin inventar informacion ausente.
+Cada llamada al pipeline devuelve las mismas claves de primer nivel:
 
-## Regla general
+| Campo | Tipo | Contenido |
+| --- | --- | --- |
+| `personal_data` | objeto | Nombre, titulo, ubicacion y resumen. |
+| `contact` | objeto | Correo, telefono y URLs. |
+| `education` | lista | Formacion academica detectada. |
+| `experience` | lista | Experiencia profesional detectada. |
+| `skills` | objeto | Habilidades agrupadas por categoria. |
+| `languages` | lista | Idioma y nivel. |
+| `certifications` | lista | Certificaciones. |
+| `courses` | lista | Cursos. |
+| `projects` | lista | Proyectos. |
+| `metadata` | objeto | Trazabilidad, advertencias y errores. |
 
-- Usar `null` cuando no exista certeza suficiente.
-- Usar listas vacias cuando un bloque repetible no tenga elementos.
-- Conservar texto no clasificado en `metadata.unclassified_text`.
+Los modelos fuente se encuentran en
+`src/cv_analyzer/models/cv_schema.py`. Todos heredan de una configuracion que
+rechaza campos inesperados.
 
-## Etapa 3
+## Reglas de representacion
 
-La funcion `build_basic_cv_result()` construye una primera version del esquema
-con datos personales iniciales, contacto y listas vacias para bloques que aun
-no se extraen.
+- Un dato escalar ausente se representa con `null`.
+- Un bloque repetible sin elementos se representa con `[]`.
+- Una bandera siempre usa `true` o `false`.
+- Una fecha usa `YYYY-MM`, `YYYY` o `null`.
+- `processed_at` usa ISO 8601 con zona UTC.
+- Las lineas previas al primer encabezado se conservan en
+  `metadata.unclassified_text`.
+- Las advertencias no invalidan el resultado.
+- Los errores establecen `processed_successfully` en `false`.
 
-## Etapa 4
+## Estructura resumida
 
-El texto previo al primer encabezado se conserva como `unclassified`. Las
-secciones detectadas podran alimentar los bloques `education`, `experience`,
-`skills`, `languages`, `certifications`, `courses` y `projects` en etapas
-posteriores.
+```json
+{
+  "personal_data": {
+    "full_name": null,
+    "professional_title": null,
+    "location": null,
+    "summary": null
+  },
+  "contact": {
+    "email": null,
+    "phone": null,
+    "linkedin": null,
+    "github": null,
+    "portfolio": null
+  },
+  "education": [],
+  "experience": [],
+  "skills": {
+    "technical": [],
+    "tools": [],
+    "programming_languages": [],
+    "soft_skills": []
+  },
+  "languages": [],
+  "certifications": [],
+  "courses": [],
+  "projects": [],
+  "metadata": {
+    "source_file": null,
+    "file_size_bytes": null,
+    "page_count": null,
+    "processed_at": null,
+    "processed_successfully": false,
+    "processing_version": "1.0",
+    "warnings": [],
+    "errors": [],
+    "unclassified_text": []
+  }
+}
+```
 
-## Etapa 5
+## Entradas repetibles
 
-Las secciones detectadas se convierten en objetos iniciales. Cuando no hay
-certeza suficiente, los campos especificos quedan como `null` y el contenido
-original se conserva en `description` o `name`.
+### Education
 
-## Etapa 6
+`institution`, `degree`, `start_date`, `end_date`, `status` y `description`.
 
-El esquema se valida con Pydantic. Las fechas normalizadas usan `YYYY-MM`
-cuando hay mes y ano, `YYYY` cuando solo hay ano y `null` cuando el formato es
-ambiguo. Las advertencias se registran en `metadata.warnings`.
+### Experience
 
-## Etapa 7
+`company`, `position`, `start_date`, `end_date`, `current`, `description`,
+`responsibilities` y `achievements`.
 
-El pipeline completa `source_file`, `file_size_bytes`, `page_count` y
-`processed_at`. La marca temporal se expresa en ISO 8601 con zona UTC.
+### Languages
 
-La salida mantiene el contrato aun cuando falle el procesamiento:
+`language` y `level`.
 
-- `processed_successfully` pasa a `false`;
-- `errors` contiene al menos un mensaje controlado;
-- las secciones no disponibles conservan sus valores nulos o listas vacias;
-- los metadatos conocidos antes del fallo se mantienen.
+### Certifications
 
-## Etapa 8
+`name`, `institution` y `date`.
 
-La interfaz descarga exactamente el diccionario validado por el pipeline como
-JSON UTF-8 indentado. El texto extraido se transporta en
-`CVProcessingOutput.extracted_text` para su visualizacion, pero no se anade al
-contrato JSON ni duplica contenido en `metadata`.
+### Courses
+
+`name`, `institution`, `start_date`, `end_date` y `status`.
+
+### Projects
+
+`name`, `description`, `technologies` y `url`.
+
+## Resultado fallido
+
+Un error de archivo no cambia la forma del documento. Las secciones permanecen
+vacias y `metadata` contiene:
+
+```json
+{
+  "processed_successfully": false,
+  "warnings": [],
+  "errors": [
+    "El PDF no contiene texto extraible."
+  ]
+}
+```
+
+Las demas claves de `metadata` siguen presentes. El ejemplo completo de una
+salida correcta esta en
+[`../examples/example_result.json`](../examples/example_result.json).

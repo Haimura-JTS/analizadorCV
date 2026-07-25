@@ -21,7 +21,7 @@ def test_extract_initial_personal_info_avoids_contact_line_as_name() -> None:
     "second_line",
     [
         "ana@example.com",
-        "+34 600 123 456",
+        "+34 000 000 000",
         "https://example.com/ana",
         "linkedin.com/in/ana",
         "EXPERIENCIA",

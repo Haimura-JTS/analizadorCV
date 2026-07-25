@@ -1,27 +1,44 @@
 # Planificacion
 
-## Alcance inicial
+## Version 0.1.0
 
-El proyecto se desarrollara por etapas para evitar introducir complejidad antes de estabilizar el nucleo.
+Las diez etapas previstas estan implementadas:
 
-## Etapa actual
+1. Estructura inicial y alcance.
+2. Lectura y validacion de PDF.
+3. Limpieza, contacto y datos personales.
+4. Deteccion de secciones.
+5. Extraccion estructurada.
+6. Fechas, modelos y validacion.
+7. Pipeline completo.
+8. Interfaz Streamlit.
+9. Pruebas y robustez.
+10. Documentacion y entrega.
 
-Etapa 9 implementada: pruebas y robustez.
+## Entregables
 
-Se han incorporado PDFs sinteticos, recorridos reales de integracion, casos
-invalidos, regresiones y un umbral de cobertura. La ejecucion permanece
-pendiente hasta disponer de Python en `PATH`.
+- Paquete instalable desde `pyproject.toml`.
+- Interfaz local en `app.py`.
+- API `process_cv_file()`.
+- Contrato Pydantic documentado.
+- Pruebas unitarias e integracion.
+- PDFs sinteticos y ejemplo reproducible.
+- README, changelog, arquitectura, memoria y licencia.
 
-La siguiente etapa prevista es la Etapa 10: documentacion y entrega.
+## Verificacion
 
-## Riesgos iniciales
+La instalacion editable y la suite se verificaron con Python 3.13.5 mediante
+la ruta local del interprete. Para repetir la comprobacion:
 
-- Python no esta disponible actualmente desde la terminal usada por Codex.
-- Los PDF escaneados requeriran OCR en una ampliacion posterior.
-- La precision de extraccion dependera del texto disponible en el PDF.
-- Las heuristicas actuales conservan contenido, pero todavia no separan con
-  precision multiples experiencias o titulaciones dentro de una misma seccion.
-- La interfaz no ha podido ejecutarse visualmente en el entorno actual porque
-  Python no esta disponible en PATH.
-- El umbral de cobertura del 80% no se ha podido medir todavia por la misma
-  limitacion del entorno.
+```powershell
+python -m pip install -e ".[dev]"
+python -m pytest
+python examples/run_example.py
+python -m streamlit run app.py
+```
+
+## Evolucion
+
+Las siguientes iteraciones deben partir de
+[`improvements.md`](improvements.md) y mantener compatibilidad con el contrato
+JSON 1.0.

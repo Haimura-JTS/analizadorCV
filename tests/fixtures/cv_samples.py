@@ -6,9 +6,9 @@ SPANISH_CV_PAGES = (
 Alex Rivera
 Backend Developer
 alex.rivera@example.test
-+34 612 345 678
-linkedin.com/in/alex-rivera
-github.com/alex-rivera
++34 000 000 000
+linkedin.com/in/cv-test-alex-rivera
+github.com/cv-test-alex-rivera
 alexrivera.dev
 PERFIL PROFESIONAL
 Desarrollador de servicios web y automatizaciones.

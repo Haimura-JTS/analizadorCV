@@ -11,6 +11,7 @@ def test_normalize_heading_removes_case_colon_spaces_and_accents() -> None:
 
 def test_find_section_name_detects_known_aliases() -> None:
     assert find_section_name("Experiencia profesional") == "experience"
+    assert find_section_name("EXPERIENCE") == "experience"
     assert find_section_name("Technical Skills") == "skills"
     assert find_section_name("Idiomas:") == "languages"
 

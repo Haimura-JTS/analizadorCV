@@ -43,9 +43,9 @@ def test_real_spanish_pdf_runs_through_the_complete_pipeline(
     )
     assert result["contact"] == {
         "email": "alex.rivera@example.test",
-        "phone": "+34 612 345 678",
-        "linkedin": "https://linkedin.com/in/alex-rivera",
-        "github": "https://github.com/alex-rivera",
+        "phone": "+34 000 000 000",
+        "linkedin": "https://linkedin.com/in/cv-test-alex-rivera",
+        "github": "https://github.com/cv-test-alex-rivera",
         "portfolio": "https://alexrivera.dev",
     }
     assert result["experience"][0]["responsibilities"] == [
@@ -73,9 +73,9 @@ def test_real_spanish_pdf_runs_through_the_complete_pipeline(
         "Alex Rivera",
         "Backend Developer",
         "alex.rivera@example.test",
-        "+34 612 345 678",
-        "linkedin.com/in/alex-rivera",
-        "github.com/alex-rivera",
+        "+34 000 000 000",
+        "linkedin.com/in/cv-test-alex-rivera",
+        "github.com/cv-test-alex-rivera",
         "alexrivera.dev",
     ]
     assert result["metadata"]["page_count"] == 2

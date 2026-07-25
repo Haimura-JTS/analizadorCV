@@ -1,0 +1,80 @@
+{
+  "personal_data": {
+    "full_name": "Alex Ejemplo",
+    "professional_title": "Backend Developer",
+    "location": null,
+    "summary": "Desarrolla servicios web fiables."
+  },
+  "contact": {
+    "email": "alex.ejemplo@example.test",
+    "phone": null,
+    "linkedin": null,
+    "github": null,
+    "portfolio": null
+  },
+  "education": [
+    {
+      "institution": null,
+      "degree": null,
+      "start_date": null,
+      "end_date": null,
+      "status": null,
+      "description": "Grado en Ingenieria Informatica"
+    }
+  ],
+  "experience": [
+    {
+      "company": null,
+      "position": null,
+      "start_date": null,
+      "end_date": null,
+      "current": false,
+      "description": "Equipo Demo - Backend Developer\n- Desarrollo de APIs con Python",
+      "responsibilities": [
+        "Desarrollo de APIs con Python"
+      ],
+      "achievements": []
+    }
+  ],
+  "skills": {
+    "technical": [
+      "Python",
+      "FastAPI",
+      "PostgreSQL"
+    ],
+    "tools": [],
+    "programming_languages": [],
+    "soft_skills": []
+  },
+  "languages": [
+    {
+      "language": "Ingles",
+      "level": "C1"
+    }
+  ],
+  "certifications": [],
+  "courses": [],
+  "projects": [
+    {
+      "name": "Analizador de CV",
+      "description": "Analizador de CV",
+      "technologies": [],
+      "url": null
+    }
+  ],
+  "metadata": {
+    "source_file": "sample_cv.pdf",
+    "file_size_bytes": 2048,
+    "page_count": 1,
+    "processed_at": "2026-01-01T00:00:00+00:00",
+    "processed_successfully": true,
+    "processing_version": "1.0",
+    "warnings": [],
+    "errors": [],
+    "unclassified_text": [
+      "Alex Ejemplo",
+      "Backend Developer",
+      "alex.ejemplo@example.test"
+    ]
+  }
+}

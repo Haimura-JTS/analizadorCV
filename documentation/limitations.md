@@ -39,9 +39,11 @@
 - Los encabezados reconocidos no se duplican en la salida porque actuan como
   marcadores estructurales.
 
-## Verificacion pendiente
+## Verificacion
 
-La suite automatizada y el umbral de cobertura estan configurados, pero no se
-han ejecutado en la estacion de desarrollo actual porque Python no esta
-disponible en `PATH`. Esta limitacion afecta a la medicion real de cobertura y
-a la inspeccion visual de Streamlit, no al registro de los casos de prueba.
+La suite automatizada se ejecuto con Python 3.13.5. La inspeccion visual
+interactiva de Streamlit sigue limitada al entorno local del usuario, aunque
+sus estados principales se verifican mediante `streamlit.testing.v1.AppTest`.
+
+Las ampliaciones propuestas se priorizan en
+[`improvements.md`](improvements.md).

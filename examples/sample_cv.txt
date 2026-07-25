@@ -1,0 +1,16 @@
+Alex Ejemplo
+Backend Developer
+alex.ejemplo@example.test
+PERFIL
+Desarrolla servicios web fiables.
+EXPERIENCIA
+Equipo Demo - Backend Developer
+- Desarrollo de APIs con Python
+FORMACION
+Grado en Ingenieria Informatica
+HABILIDADES
+Python, FastAPI, PostgreSQL
+IDIOMAS
+Ingles - C1
+PROYECTOS
+Analizador de CV

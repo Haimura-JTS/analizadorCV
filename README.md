@@ -1,38 +1,83 @@
 # Analizador de CV
 
-Aplicacion academica para analizar curriculums en formato PDF y convertir la informacion extraida en una estructura JSON consistente.
+Aplicacion local en Python que extrae texto de curriculums PDF, detecta sus
+secciones principales y devuelve un resultado JSON consistente. Incluye una
+interfaz Streamlit y una API de Python para integrar el pipeline en otros
+programas.
 
-## Objetivo
+## Funcionalidades
 
-El proyecto se desarrollara por etapas. La primera version se centrara en:
+- Validacion de archivos PDF de hasta 10 MB.
+- Extraccion de texto y metadatos con PyMuPDF.
+- Deteccion de secciones en espanol e ingles.
+- Extraccion conservadora de contacto, perfil, experiencia, formacion,
+  habilidades, idiomas, certificaciones, cursos y proyectos.
+- Normalizacion inicial de fechas.
+- Validacion estricta del resultado mediante Pydantic.
+- Salida con el mismo contrato JSON ante exito o error.
+- Interfaz para cargar, revisar y descargar el analisis.
+- Procesamiento local sin consultas a servicios externos.
 
-- validar archivos PDF;
-- extraer texto;
-- limpiar contenido;
-- detectar secciones principales;
-- construir un JSON estructurado;
-- conservar informacion no clasificada.
+## Requisitos
 
-## Tecnologias previstas
+- Python 3.11 o superior.
+- Un PDF con capa de texto. Los documentos escaneados requieren OCR.
 
-- Python 3.11 o superior
-- PyMuPDF para lectura de PDF
-- Pydantic para validacion de modelos
-- pytest para pruebas
-- Streamlit para la interfaz web
-
-## Estado actual
-
-Etapa 9 implementada: la aplicacion dispone de pruebas unitarias, integracion
-con PDFs sinteticos reales, casos invalidos y control de cobertura.
-
-## Instalacion
+## Inicio rapido
 
 ```powershell
+git clone https://github.com/Haimura-JTS/analizadorCV.git
+cd analizadorCV
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
+python -m streamlit run app.py
 ```
+
+Streamlit mostrara la URL local de la aplicacion en la terminal. Las
+instrucciones para Windows, Linux y macOS se detallan en
+[`documentation/installation.md`](documentation/installation.md).
+
+## Uso
+
+### Interfaz
+
+1. Seleccionar o arrastrar un unico archivo PDF.
+2. Pulsar **Analizar curriculum**.
+3. Revisar el resumen, el texto extraido y el JSON.
+4. Descargar el resultado.
+
+La copia temporal del PDF se elimina al terminar el procesamiento, tambien
+cuando ocurre un error.
+
+### API de Python
+
+```python
+from cv_analyzer.pipeline import process_cv_file
+
+result = process_cv_file("curriculum.pdf")
+
+if result["metadata"]["processed_successfully"]:
+    print(result["personal_data"])
+else:
+    print(result["metadata"]["errors"])
+```
+
+`process_cv_file()` siempre devuelve el contrato completo. La variante
+`process_cv_file_with_details()` conserva ademas el texto extraido para
+clientes que necesiten mostrarlo.
+
+### Ejemplo reproducible
+
+```powershell
+python examples/run_example.py
+```
+
+El ejemplo usa datos ficticios, crea el PDF dentro de un directorio temporal
+y escribe el JSON en `examples/output/sample_result.json`. El resultado de
+referencia se encuentra en
+[`examples/example_result.json`](examples/example_result.json).
 
 ## Pruebas
 
@@ -40,45 +85,61 @@ python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-La suite mide cobertura de ramas del paquete `cv_analyzer` y exige un minimo
-del 80%. La estrategia completa se documenta en
+La configuracion mide cobertura de ramas del paquete `cv_analyzer`, muestra
+lineas sin cubrir y exige un minimo del 80%. La verificacion final con Python
+3.13.5 completo 75 casos y obtuvo una cobertura total del 93,36%. Los casos se
+describen en
 [`documentation/testing.md`](documentation/testing.md).
 
-## Uso del pipeline
+## Estructura
 
-```python
-from cv_analyzer.pipeline import process_cv_file
-
-result = process_cv_file("curriculum.pdf")
+```text
+.
+|-- app.py
+|-- examples/
+|-- src/cv_analyzer/
+|   |-- models/
+|   |-- pdf_reader.py
+|   |-- section_detector.py
+|   |-- pipeline.py
+|   `-- validators.py
+|-- tests/
+|   |-- fixtures/
+|   |-- integration/
+|   `-- unit/
+`-- documentation/
 ```
 
-La funcion devuelve siempre el contrato JSON del proyecto. Cuando el archivo
-no puede procesarse, `metadata.processed_successfully` vale `false` y el motivo
-queda registrado en `metadata.errors`.
+La interfaz depende del pipeline; el pipeline coordina lectores, extractores,
+constructores y validadores. Los detalles estan en
+[`documentation/architecture.md`](documentation/architecture.md).
 
-## Interfaz
+## Contrato JSON
 
-```powershell
-streamlit run app.py
-```
-
-La interfaz permite seleccionar o arrastrar un PDF, iniciar el analisis,
-consultar un resumen, revisar el texto extraido, inspeccionar el JSON y
-descargar el resultado.
+Los datos ausentes usan `null`, las colecciones repetibles usan listas y los
+diagnosticos se guardan en `metadata.warnings` y `metadata.errors`. El esquema
+completo se documenta en
+[`documentation/json_schema.md`](documentation/json_schema.md).
 
 ## Privacidad
 
-- El analizador no consulta servicios externos.
-- La copia creada en el sistema de archivos se elimina al terminar cada
-  procesamiento.
-- Streamlit mantiene el archivo seleccionado y el resultado en la sesion
-  activa hasta que se reemplacen o finalice la sesion.
+- No se envian documentos ni datos a servicios externos.
+- Los ejemplos no contienen datos personales reales.
+- Los PDFs temporales de la interfaz y del ejemplo se eliminan tras su uso.
+- Los resultados descargados quedan bajo control del usuario.
 
-## Limitaciones actuales
+## Documentacion
 
-- Las heuristicas de experiencia y formacion todavia agrupan cada seccion como
-  un unico bloque.
-- Los PDF escaneados sin capa de texto no se procesan mediante OCR.
+- [Instalacion](documentation/installation.md)
+- [Arquitectura](documentation/architecture.md)
+- [Esquema JSON](documentation/json_schema.md)
+- [Pruebas](documentation/testing.md)
+- [Limitaciones](documentation/limitations.md)
+- [Mejoras futuras](documentation/improvements.md)
+- [Memoria tecnica](documentation/memoria.md)
+- [Planificacion](documentation/planning.md)
+- [Changelog](CHANGELOG.md)
 
-El registro completo esta en
-[`documentation/limitations.md`](documentation/limitations.md).
+## Licencia
+
+Distribuido bajo la licencia MIT. Consulte [LICENSE](LICENSE).
