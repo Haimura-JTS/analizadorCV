@@ -27,6 +27,12 @@ HEADING_NUMBER_PREFIX_PATTERN = re.compile(
 # linea como encabezado.
 HEADING_VARIANT_SEPARATOR_PATTERN = re.compile(r"\s*(?:/|\||\(|\))\s*")
 
+# Separa un encabezado de contenido escrito en la misma linea. Los guiones y
+# tuberias requieren espacios para no confundir URLs o nombres compuestos.
+INLINE_HEADING_SEPARATOR_PATTERN = re.compile(
+    r":|\s+(?:-|\u2013|\u2014|\|)\s+"
+)
+
 
 SECTION_ALIASES: dict[str, set[str]] = {
     "profile": {
@@ -60,14 +66,22 @@ SECTION_ALIASES: dict[str, set[str]] = {
         "employment history",
     },
     "education": {
+        "antecedentes academicos",
         "formacion",
         "formacion academica",
+        "formacion reglada",
+        "formacion y estudios",
+        "educacion y formacion",
         "educacion",
         "estudios",
+        "estudios academicos",
+        "historial academico",
         "titulaciones",
         "academic education",
         "education",
         "academic background",
+        "academic qualifications",
+        "educational background",
         "qualifications",
     },
     "skills": {
@@ -75,37 +89,63 @@ SECTION_ALIASES: dict[str, set[str]] = {
         "habilidades tecnicas",
         "competencias",
         "competencias clave",
+        "competencias profesionales",
         "competencias tecnicas",
         "conocimientos",
+        "conocimientos tecnicos",
         "tecnologias",
+        "tecnologias y herramientas",
+        "herramientas y tecnologias",
+        "stack tecnologico",
         "aptitudes",
         "core competencies",
+        "hard skills",
         "skills",
         "skills and tools",
         "tech stack",
         "technical skills",
+        "technical competencies",
         "competencies",
         "tools",
     },
     "languages": {
         "idiomas",
+        "idiomas y nivel",
+        "conocimientos de idiomas",
         "competencias linguisticas",
+        "lenguas",
+        "foreign languages",
         "language skills",
+        "language proficiency",
         "languages",
     },
     "certifications": {
         "acreditaciones",
         "certificaciones",
+        "certificaciones y licencias",
         "certificados",
+        "certificados y acreditaciones",
+        "credenciales",
+        "licencias y certificaciones",
         "certifications",
         "certificates",
+        "credentials",
+        "licenses",
         "licenses and certifications",
+        "licenses certifications",
     },
     "courses": {
+        "capacitacion",
         "cursos",
+        "cursos y formacion",
+        "cursos y seminarios",
         "cursos and formacion",
+        "formacion adicional",
         "formacion complementaria",
+        "seminarios",
+        "talleres",
         "additional training",
+        "continuing education",
         "courses and training",
         "courses",
         "professional development",
@@ -191,7 +231,7 @@ def find_section_name(line: str) -> str | None:
     Returns:
         Nombre interno de la seccion o None si la linea no es encabezado.
     """
-    candidates = _find_section_candidates(line)
+    candidates, _ = _analyze_section_line(line)
     return next(iter(candidates)) if len(candidates) == 1 else None
 
 
@@ -231,7 +271,7 @@ def detect_sections_with_warnings(
     seen_sections: set[str] = set()
 
     for line in lines:
-        section_candidates = _find_section_candidates(line)
+        section_candidates, inline_content = _analyze_section_line(line)
         detected_section = (
             next(iter(section_candidates))
             if len(section_candidates) == 1
@@ -247,6 +287,8 @@ def detect_sections_with_warnings(
             section_order.append(detected_section)
             current_section = detected_section
             sections.setdefault(current_section, [])
+            if inline_content:
+                sections[current_section].append(inline_content)
             continue
 
         if len(section_candidates) > 1:
@@ -290,6 +332,24 @@ def _find_section_candidates(line: str) -> set[str]:
         return set()
 
     return {match for match in matches if match is not None}
+
+
+def _analyze_section_line(line: str) -> tuple[set[str], str | None]:
+    direct_candidates = _find_section_candidates(line)
+    if direct_candidates:
+        return direct_candidates, None
+
+    separators = list(INLINE_HEADING_SEPARATOR_PATTERN.finditer(line))
+    for separator in reversed(separators):
+        heading = line[: separator.start()].strip()
+        content = line[separator.end() :].strip()
+        if not heading or not content:
+            continue
+        candidates = _find_section_candidates(heading)
+        if candidates:
+            return candidates, content
+
+    return set(), None
 
 
 def _strip_edge_decoration(text: str) -> str:

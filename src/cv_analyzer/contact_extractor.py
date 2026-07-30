@@ -31,6 +31,12 @@ URL_PATTERN = re.compile(
     r"(?:https?://)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:/[^\s]*)?",
     re.IGNORECASE,
 )
+LINKEDIN_PROFILE_PATTERN = re.compile(
+    r"(?:https?://\s*)?(?:www\.\s*)?"
+    r"(?:[a-z]{2,3}\.)?linkedin\.com\s*/\s*"
+    r"(?:in|pub|company)\s*/\s*[A-Za-z0-9._~%+-]+",
+    re.IGNORECASE,
+)
 
 MIN_PHONE_DIGITS = 9
 MAX_PHONE_DIGITS = 15
@@ -113,6 +119,10 @@ def extract_linkedin(text: str) -> str | None:
     Returns:
         URL normalizada o None.
     """
+    profile_match = LINKEDIN_PROFILE_PATTERN.search(text)
+    if profile_match is not None:
+        compact_url = re.sub(r"\s+", "", profile_match.group(0))
+        return _normalize_url(compact_url)
     return _find_url_containing(text, "linkedin.com")
 
 

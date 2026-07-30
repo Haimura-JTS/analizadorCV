@@ -19,13 +19,27 @@ DETAIL_SEPARATOR_PATTERN = re.compile(r"\s+(?:-|\u2013|\u2014|\|)\s+")
 LANGUAGE_LEVEL_PATTERN = re.compile(
     r"^(?:[abc][12]|"
     r"advanced|avanzado|basic|basico|bilingual|bilingue|"
-    r"conversational|elementary|fluent|fluido|intermediate|intermedio|"
-    r"mother tongue|native|native speaker|nativo|professional|profesional)$",
+    r"business working proficiency|conversational|elementary|"
+    r"elementary proficiency|fluent|fluido|full professional proficiency|"
+    r"intermediate|intermedio|limited working proficiency|medio|"
+    r"mother tongue|native|native speaker|nativo|"
+    r"professional|professional working proficiency|profesional)$",
     re.IGNORECASE,
 )
 TRAILING_LANGUAGE_LEVEL_PATTERN = re.compile(
     r"^(?P<language>.+?)\s+"
-    r"(?P<level>[ABC][12]|Native|Nativo|Fluent|Fluido)$",
+    r"(?P<level>[ABC][12]|Advanced|Avanzado|Basic|Basico|"
+    r"Intermediate|Intermedio|Native|Nativo|Fluent|Fluido|Medio|"
+    r"Professional|Profesional)$",
+    re.IGNORECASE,
+)
+PARENTHESIZED_LANGUAGE_LEVEL_PATTERN = re.compile(
+    r"^(?P<language>.+?)\s*\((?P<level>[^()]+)\)$"
+)
+LANGUAGE_ENTRY_SEPARATOR_PATTERN = re.compile(r"\s*[,;|/]\s*")
+LANGUAGE_LEVEL_PREFIX_PATTERN = re.compile(
+    r"^(?:nivel|level)\s+(?:de|of)\s+(?P<language>.+?)\s*:\s*"
+    r"(?P<level>.+)$",
     re.IGNORECASE,
 )
 
@@ -163,34 +177,31 @@ def extract_languages_with_warnings(
 
     for line in clean_nonempty_lines(lines):
         cleaned_line = _clean_list_line(line)
-        language, level, explicit_detail = _split_language_and_level(
-            cleaned_line
-        )
-        if explicit_detail and language is None:
-            entries.append(LanguageEntry(level=level))
-            warnings.append(
-                f"languages[{len(entries) - 1}] no incluye un idioma."
+        for language_item in _split_language_items(cleaned_line):
+            language, level, explicit_detail = _split_language_and_level(
+                language_item
             )
-            continue
-        if language is not None:
-            entries.append(LanguageEntry(language=language, level=level))
-            if explicit_detail and level is None:
+            if explicit_detail and language is None:
+                entries.append(LanguageEntry(level=level))
                 warnings.append(
-                    f"languages[{len(entries) - 1}] no incluye un nivel."
+                    f"languages[{len(entries) - 1}] no incluye un idioma."
                 )
-            if (
-                explicit_detail
-                and level is not None
-                and LANGUAGE_LEVEL_PATTERN.fullmatch(level) is None
-            ):
-                warnings.append(
-                    f"languages[{len(entries) - 1}] contiene un nivel "
-                    "no normalizado."
-                )
-            continue
-
-        for value in split_values(cleaned_line):
-            entries.append(LanguageEntry(language=value))
+                continue
+            if language is not None:
+                entries.append(LanguageEntry(language=language, level=level))
+                if explicit_detail and level is None:
+                    warnings.append(
+                        f"languages[{len(entries) - 1}] no incluye un nivel."
+                    )
+                if (
+                    explicit_detail
+                    and level is not None
+                    and LANGUAGE_LEVEL_PATTERN.fullmatch(level) is None
+                ):
+                    warnings.append(
+                        f"languages[{len(entries) - 1}] contiene un nivel "
+                        "no normalizado."
+                    )
 
     return LanguageExtractionResult(entries=entries, warnings=warnings)
 
@@ -414,6 +425,14 @@ def _clean_list_line(line: str) -> str:
 def _split_language_and_level(
     line: str,
 ) -> tuple[str | None, str | None, bool]:
+    level_prefix = LANGUAGE_LEVEL_PREFIX_PATTERN.fullmatch(line)
+    if level_prefix is not None:
+        return (
+            level_prefix.group("language").strip() or None,
+            level_prefix.group("level").strip() or None,
+            True,
+        )
+
     if ":" in line:
         language, level = line.split(":", maxsplit=1)
         return language.strip() or None, level.strip() or None, True
@@ -434,10 +453,23 @@ def _split_language_and_level(
             False,
         )
 
-    values = split_values(line)
-    if len(values) == 1:
-        return values[0], None, False
-    return None, None, False
+    parenthesized_level = PARENTHESIZED_LANGUAGE_LEVEL_PATTERN.fullmatch(line)
+    if parenthesized_level is not None:
+        return (
+            parenthesized_level.group("language").strip() or None,
+            parenthesized_level.group("level").strip() or None,
+            True,
+        )
+
+    return line.strip() or None, None, False
+
+
+def _split_language_items(line: str) -> list[str]:
+    return [
+        value.strip()
+        for value in LANGUAGE_ENTRY_SEPARATOR_PATTERN.split(line)
+        if value.strip()
+    ]
 
 
 def _parse_dated_parts(

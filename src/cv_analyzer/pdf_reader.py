@@ -8,7 +8,7 @@ paginas posiblemente escaneadas.
 No clasifica secciones ni interpreta datos personales.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import fitz
@@ -42,6 +42,7 @@ class PDFTextExtractionResult:
     page_count: int
     file_size_bytes: int
     warnings: list[str]
+    embedded_links: list[str] = field(default_factory=list)
 
 
 def validate_pdf_file(file_path: Path) -> None:
@@ -108,7 +109,9 @@ def read_pdf_text(file_path: Path) -> PDFTextExtractionResult:
             if page_count == 0:
                 raise EmptyDocumentError(PDF_NO_PAGES_MESSAGE)
 
-            page_texts, page_has_images = _extract_document_pages(document)
+            page_texts, page_has_images, embedded_links = (
+                _extract_document_pages(document)
+            )
     except (PasswordProtectedPDFError, EmptyDocumentError):
         raise
     except Exception as error:
@@ -126,6 +129,7 @@ def read_pdf_text(file_path: Path) -> PDFTextExtractionResult:
         page_count=page_count,
         file_size_bytes=file_size_bytes,
         warnings=_build_page_warnings(page_texts, page_has_images),
+        embedded_links=embedded_links,
     )
 
 
@@ -152,15 +156,47 @@ def extract_text_from_pdf(file_path: Path) -> str:
 
 def _extract_document_pages(
     document: fitz.Document,
-) -> tuple[list[str], list[bool]]:
+) -> tuple[list[str], list[bool], list[str]]:
     page_texts: list[str] = []
     page_has_images: list[bool] = []
+    embedded_links: list[str] = []
+    seen_links: set[str] = set()
 
     for page in document:
-        page_texts.append(page.get_text("text"))
+        page_text = page.get_text("text")
+        page_texts.append(page_text)
         page_has_images.append(bool(page.get_images(full=True)))
+        for uri in _extract_page_link_uris(page, page_text):
+            normalized_uri = uri.casefold()
+            if normalized_uri not in seen_links:
+                seen_links.add(normalized_uri)
+                embedded_links.append(uri)
 
-    return page_texts, page_has_images
+    return page_texts, page_has_images, embedded_links
+
+
+def _extract_page_link_uris(page: fitz.Page, page_text: str) -> list[str]:
+    """Recupera hipervinculos web ocultos tras texto o iconos del PDF."""
+    known_text = page_text.casefold()
+    seen_uris: set[str] = set()
+    uris: list[str] = []
+
+    for link in page.get_links():
+        uri = link.get("uri")
+        if not isinstance(uri, str):
+            continue
+        cleaned_uri = uri.strip()
+        normalized_uri = cleaned_uri.casefold()
+        if (
+            not normalized_uri.startswith(("http://", "https://"))
+            or normalized_uri in known_text
+            or normalized_uri in seen_uris
+        ):
+            continue
+        seen_uris.add(normalized_uri)
+        uris.append(cleaned_uri)
+
+    return uris
 
 
 def _build_page_warnings(

@@ -9,6 +9,7 @@ No calcula niveles de dominio ni infiere habilidades ausentes.
 """
 
 from dataclasses import dataclass
+import re
 
 from cv_analyzer.extraction_utils import clean_nonempty_lines
 from cv_analyzer.extraction_utils import deduplicate_preserving_order
@@ -23,24 +24,52 @@ SKILL_CATEGORIES = (
     "soft_skills",
 )
 
+AUTO_CLASSIFICATION_LABEL = "auto"
+
 SKILL_LABELS = {
     "aptitudes tecnicas": "technical",
-    "bases de datos": "technical",
-    "databases": "technical",
+    "bases de datos": AUTO_CLASSIFICATION_LABEL,
+    "competencias": AUTO_CLASSIFICATION_LABEL,
+    "competencias clave": AUTO_CLASSIFICATION_LABEL,
+    "competencias profesionales": AUTO_CLASSIFICATION_LABEL,
+    "conocimientos": AUTO_CLASSIFICATION_LABEL,
+    "databases": AUTO_CLASSIFICATION_LABEL,
     "frameworks": "technical",
+    "frameworks y librerias": "technical",
+    "hard skills": "technical",
+    "librerias": "technical",
+    "metodologias": "technical",
+    "skills": AUTO_CLASSIFICATION_LABEL,
+    "stack tecnologico": AUTO_CLASSIFICATION_LABEL,
+    "tech stack": AUTO_CLASSIFICATION_LABEL,
     "technical": "technical",
     "technical skills": "technical",
-    "tecnologias": "technical",
+    "tecnologias": AUTO_CLASSIFICATION_LABEL,
+    "tecnologias y herramientas": AUTO_CLASSIFICATION_LABEL,
     "herramientas": "tools",
+    "herramientas y tecnologias": AUTO_CLASSIFICATION_LABEL,
     "platforms": "tools",
+    "plataformas": "tools",
+    "software": "tools",
     "tools": "tools",
     "lenguajes": "programming_languages",
     "lenguajes de programacion": "programming_languages",
     "programming languages": "programming_languages",
     "habilidades blandas": "soft_skills",
     "habilidades interpersonales": "soft_skills",
+    "competencias interpersonales": "soft_skills",
+    "people skills": "soft_skills",
     "soft skills": "soft_skills",
 }
+
+SKILL_VALUE_SEPARATOR_PATTERN = re.compile(r"[,;|]|\s+/\s+")
+SKILL_LEVEL_SUFFIX_PATTERN = re.compile(
+    r"\s*(?:\((?:nivel\s+)?(?:basico|basic|intermedio|intermediate|"
+    r"avanzado|advanced|experto|expert)\)|"
+    r"(?:-|:)\s*(?:basico|basic|intermedio|intermediate|"
+    r"avanzado|advanced|experto|expert))$",
+    re.IGNORECASE,
+)
 
 PROGRAMMING_LANGUAGES = {
     "bash",
@@ -48,10 +77,15 @@ PROGRAMMING_LANGUAGES = {
     "c#",
     "c++",
     "go",
+    "groovy",
     "java",
     "javascript",
     "kotlin",
+    "matlab",
+    "objective-c",
+    "perl",
     "php",
+    "pl/sql",
     "powershell",
     "python",
     "r",
@@ -60,13 +94,25 @@ PROGRAMMING_LANGUAGES = {
     "scala",
     "sql",
     "swift",
+    "transact-sql",
     "typescript",
+    "vba",
 }
 TOOLS = {
+    "adobe illustrator",
+    "adobe photoshop",
+    "android studio",
     "ansible",
     "aws",
     "azure",
+    "azure devops",
+    "bitbucket",
+    "confluence",
+    "databricks",
+    "dbeaver",
     "docker",
+    "eclipse",
+    "excel",
     "figma",
     "gcp",
     "git",
@@ -74,27 +120,82 @@ TOOLS = {
     "gitlab",
     "jenkins",
     "jira",
+    "jupyter",
     "kubernetes",
+    "linux",
+    "microsoft 365",
+    "mongodb",
     "mysql",
+    "notion",
     "oracle",
     "postgresql",
     "power bi",
+    "powerbi",
+    "pycharm",
+    "red hat",
     "redis",
+    "salesforce",
+    "sap",
+    "snowflake",
+    "splunk",
+    "sql server",
+    "sqlite",
+    "swagger",
     "tableau",
+    "talend",
+    "teams",
     "terraform",
+    "trello",
+    "visual studio",
+    "visual studio code",
+    "vscode",
+    "windows",
+    "wordpress",
 }
 SOFT_SKILLS = {
     "adaptabilidad",
     "adaptability",
+    "analytical thinking",
+    "atencion al detalle",
+    "autonomia",
+    "autonomy",
+    "capacidad analitica",
+    "collaboration",
+    "colaboracion",
     "comunicacion",
+    "comunicacion efectiva",
+    "comunicacion oral y escrita",
     "communication",
+    "conflict resolution",
     "creatividad",
     "creativity",
+    "critical thinking",
+    "empatia",
+    "empathy",
+    "escucha activa",
+    "flexibilidad",
+    "flexibility",
+    "gestion de conflictos",
+    "gestion del tiempo",
+    "iniciativa",
+    "initiative",
+    "inteligencia emocional",
     "leadership",
     "liderazgo",
+    "negociacion",
+    "negotiation",
+    "organizacion",
+    "organization",
+    "pensamiento analitico",
+    "pensamiento critico",
+    "proactividad",
+    "proactivity",
     "problem solving",
+    "resilience",
+    "resiliencia",
     "resolucion de problemas",
     "teamwork",
+    "time management",
     "trabajo en equipo",
 }
 
@@ -142,7 +243,10 @@ def extract_skills_with_warnings(
         cleaned_line = strip_bullet(line) if is_bullet_line(line) else line
         explicit_category, values = _split_labeled_skills(cleaned_line)
 
-        if explicit_category is not None:
+        if (
+            explicit_category is not None
+            and explicit_category != AUTO_CLASSIFICATION_LABEL
+        ):
             for value in values:
                 _append_skill(
                     categorized,
@@ -152,7 +256,7 @@ def extract_skills_with_warnings(
                 )
             continue
 
-        if ":" in cleaned_line:
+        if ":" in cleaned_line and explicit_category is None:
             warnings.append(
                 "skills contiene una etiqueta no reconocida; "
                 "se aplico clasificacion por valor."
@@ -172,15 +276,15 @@ def _split_labeled_skills(
     line: str,
 ) -> tuple[str | None, list[str]]:
     if ":" not in line:
-        return None, split_values(line)
+        return None, _split_skill_values(line)
 
     label, raw_values = line.split(":", maxsplit=1)
     category = SKILL_LABELS.get(_normalize_label(label))
-    return category, split_values(raw_values)
+    return category, _split_skill_values(raw_values)
 
 
 def _classify_skill(value: str) -> str:
-    normalized_value = normalize_lookup_text(value)
+    normalized_value = _normalized_skill_key(value)
     if normalized_value in PROGRAMMING_LANGUAGES:
         return "programming_languages"
     if normalized_value in TOOLS:
@@ -194,8 +298,21 @@ def _normalize_label(value: str) -> str:
     return normalize_lookup_text(value)
 
 
+def _normalized_skill_key(value: str) -> str:
+    normalized_value = normalize_lookup_text(value)
+    return SKILL_LEVEL_SUFFIX_PATTERN.sub("", normalized_value).strip()
+
+
+def _split_skill_values(value: str) -> list[str]:
+    return [
+        item.strip()
+        for item in SKILL_VALUE_SEPARATOR_PATTERN.split(value)
+        if item.strip()
+    ]
+
+
 def _was_seen(value: str, seen_values: set[str]) -> bool:
-    normalized_value = value.casefold()
+    normalized_value = normalize_lookup_text(value)
     if normalized_value in seen_values:
         return True
     seen_values.add(normalized_value)

@@ -92,6 +92,31 @@ def test_extract_text_from_pdf_preserves_string_interface(tmp_path: Path) -> Non
     assert extract_text_from_pdf(file_path) == "Formacion academica"
 
 
+def test_extract_text_from_pdf_includes_hidden_web_links(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "linked-profile.pdf"
+    document = fitz.open()
+    page = document.new_page()
+    page.insert_text((72, 72), "LinkedIn")
+    page.insert_link(
+        {
+            "kind": fitz.LINK_URI,
+            "from": fitz.Rect(70, 55, 130, 80),
+            "uri": "https://www.linkedin.com/in/ana-garcia",
+        }
+    )
+    document.save(file_path)
+    document.close()
+
+    result = read_pdf_text(file_path)
+
+    assert result.text == "LinkedIn"
+    assert result.embedded_links == [
+        "https://www.linkedin.com/in/ana-garcia"
+    ]
+
+
 def test_read_pdf_text_rejects_empty_pdf(tmp_path: Path) -> None:
     file_path = tmp_path / "empty.pdf"
     document = fitz.open()

@@ -51,8 +51,20 @@ def test_extract_education_marks_current_study_and_ambiguity() -> None:
     assert current_result.entries[0].start_date == "2024"
     assert current_result.entries[0].end_date is None
     assert current_result.warnings == []
-    assert ambiguous_result.entries[0].institution is None
-    assert ambiguous_result.entries[0].degree is None
-    assert ambiguous_result.warnings == [
-        "education[0] no permite diferenciar institucion y titulacion."
-    ]
+    assert ambiguous_result.entries[0].institution == "Centro X"
+    assert ambiguous_result.entries[0].degree == "Programa avanzado"
+    assert ambiguous_result.warnings == []
+
+
+def test_extract_education_parses_comma_separated_and_fp_formats() -> None:
+    entries = extract_education(
+        [
+            "Tecnico Superior en Desarrollo Web, IES Clara Campoamor, "
+            "2020 - 2022"
+        ]
+    )
+
+    assert entries[0].degree == "Tecnico Superior en Desarrollo Web"
+    assert entries[0].institution == "IES Clara Campoamor"
+    assert entries[0].start_date == "2020"
+    assert entries[0].end_date == "2022"

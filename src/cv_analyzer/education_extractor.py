@@ -17,17 +17,22 @@ from cv_analyzer.extraction_utils import normalize_lookup_text
 
 # Separa titulacion e institucion cuando existe un delimitador visible.
 EDUCATION_HEADER_SEPARATOR_PATTERN = re.compile(
-    r"\s+(?:\||@|-|\u2013|\u2014)\s+"
+    r"\s*(?:\||@|,)\s*|\s+(?:-|\u2013|\u2014)\s+"
 )
 
 DEGREE_TERMS = {
     "bachelor",
+    "bachillerato",
     "bsc",
     "certificado",
+    "ciclo formativo",
     "degree",
     "diploma",
     "doctorado",
     "engineering",
+    "especializacion",
+    "estudios",
+    "fp",
     "formacion profesional",
     "grado",
     "ingenieria",
@@ -35,16 +40,25 @@ DEGREE_TERMS = {
     "master",
     "msc",
     "phd",
+    "postgrado",
+    "tecnico medio",
+    "tecnico superior",
     "tecnico",
 }
 INSTITUTION_TERMS = {
     "academy",
+    "academia",
+    "campus",
+    "centro",
+    "college",
     "colegio",
     "escuela",
     "facultad",
+    "ies",
     "institute",
     "instituto",
     "school",
+    "universitat",
     "university",
     "universidad",
 }
@@ -252,6 +266,14 @@ def _infer_institution_and_degree(
         return second_value, first_value
     if second_is_degree and first_is_institution:
         return first_value, second_value
+    if first_is_degree and not second_is_degree:
+        return second_value, first_value
+    if second_is_degree and not first_is_degree:
+        return first_value, second_value
+    if first_is_institution and not second_is_institution:
+        return first_value, second_value
+    if second_is_institution and not first_is_institution:
+        return second_value, first_value
     return None, None
 
 
@@ -261,4 +283,11 @@ def _line_has_date(line: str) -> bool:
 
 def _contains_term(value: str, terms: set[str]) -> bool:
     normalized_value = normalize_lookup_text(value)
-    return any(term in normalized_value for term in terms)
+    return any(
+        re.search(
+            rf"(?<!\w){re.escape(term)}(?!\w)",
+            normalized_value,
+        )
+        is not None
+        for term in terms
+    )

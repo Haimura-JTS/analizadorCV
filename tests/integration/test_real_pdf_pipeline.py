@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import fitz
+
 from cv_analyzer.constants import PDF_EMPTY_TEXT_MESSAGE, PDF_PROTECTED_MESSAGE
 from cv_analyzer.constants import PDF_SCANNED_MESSAGE
 from cv_analyzer.constants import PDF_SCANNED_PAGES_WARNING_TEMPLATE
@@ -95,6 +97,63 @@ def test_real_spanish_pdf_runs_through_the_complete_pipeline(
         "education[0] no permite diferenciar institucion y titulacion."
         in result["metadata"]["warnings"]
     )
+
+
+def test_real_pdf_detects_inline_sections_and_hidden_linkedin(
+    tmp_path: Path,
+) -> None:
+    file_path = tmp_path / "modern-inline-cv.pdf"
+    document = fitz.open()
+    page = document.new_page()
+    cv_lines = [
+        "Ana Garcia",
+        "Backend Developer",
+        "FORMACION Y ESTUDIOS: Tecnico Superior en Desarrollo Web | "
+        "IES Clara Campoamor | 2020 - 2022",
+        "COMPETENCIAS PROFESIONALES: Python / FastAPI / Docker / Jira / "
+        "Comunicacion efectiva",
+        "IDIOMAS Y NIVEL: Ingles (B2); Espanol - Nativo",
+        "LICENCIAS Y CERTIFICACIONES: AWS Cloud Practitioner | "
+        "Amazon Web Services | 2024",
+        "FORMACION ADICIONAL: Python avanzado | Academia X | 2023",
+    ]
+    for line_number, line in enumerate(cv_lines):
+        page.insert_text((52, 72 + line_number * 28), line, fontsize=8)
+    page.insert_link(
+        {
+            "kind": fitz.LINK_URI,
+            "from": fitz.Rect(45, 42, 90, 62),
+            "uri": "https://www.linkedin.com/in/ana-garcia",
+        }
+    )
+    document.save(file_path)
+    document.close()
+
+    result = process_cv_file(file_path)
+
+    _assert_valid_json_result(result)
+    assert result["contact"]["linkedin"] == (
+        "https://www.linkedin.com/in/ana-garcia"
+    )
+    assert result["education"][0]["degree"] == (
+        "Tecnico Superior en Desarrollo Web"
+    )
+    assert result["education"][0]["institution"] == "IES Clara Campoamor"
+    assert result["skills"]["programming_languages"] == ["Python"]
+    assert result["skills"]["technical"] == ["FastAPI"]
+    assert result["skills"]["tools"] == ["Docker", "Jira"]
+    assert result["skills"]["soft_skills"] == ["Comunicacion efectiva"]
+    assert result["languages"] == [
+        {"language": "Ingles", "level": "B2"},
+        {"language": "Espanol", "level": "Nativo"},
+    ]
+    assert result["certifications"][0]["name"] == "AWS Cloud Practitioner"
+    assert result["certifications"][0]["institution"] == (
+        "Amazon Web Services"
+    )
+    assert result["courses"][0]["name"] == "Python avanzado"
+    assert result["courses"][0]["institution"] == "Academia X"
+    assert result["metadata"]["processed_successfully"] is True
 
 
 def test_real_english_pdf_recognizes_english_headings(

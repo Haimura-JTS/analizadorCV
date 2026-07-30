@@ -58,3 +58,29 @@ def test_extract_skills_keeps_the_first_explicit_classification() -> None:
 
     assert result["programming_languages"] == ["Docker"]
     assert result["tools"] == []
+
+
+def test_extract_skills_classifies_mixed_umbrella_label() -> None:
+    result = extract_skills(
+        [
+            "Tecnologias y herramientas: Python / FastAPI / Docker / Jira",
+            "Competencias: Comunicacion efectiva; Liderazgo; SQL Server",
+        ]
+    )
+
+    assert result == {
+        "technical": ["FastAPI"],
+        "tools": ["Docker", "Jira", "SQL Server"],
+        "programming_languages": ["Python"],
+        "soft_skills": ["Comunicacion efectiva", "Liderazgo"],
+    }
+
+
+def test_extract_skills_recognizes_levels_without_changing_display_value() -> None:
+    result = extract_skills(
+        ["Python (avanzado), Docker - intermedio, Trabajo en equipo"]
+    )
+
+    assert result["programming_languages"] == ["Python (avanzado)"]
+    assert result["tools"] == ["Docker - intermedio"]
+    assert result["soft_skills"] == ["Trabajo en equipo"]

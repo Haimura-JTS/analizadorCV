@@ -70,6 +70,47 @@ def test_find_section_name_does_not_match_partial_sentences() -> None:
     assert find_section_name("Skills developed during projects") is None
 
 
+@pytest.mark.parametrize(
+    ("line", "expected_section", "expected_content"),
+    [
+        ("Idiomas y nivel: Ingles B2", "languages", "Ingles B2"),
+        (
+            "FORMACION Y ESTUDIOS | Grado en Datos | Universidad X",
+            "education",
+            "Grado en Datos | Universidad X",
+        ),
+        (
+            "Licencias y certificaciones - AWS Cloud Practitioner",
+            "certifications",
+            "AWS Cloud Practitioner",
+        ),
+        (
+            "Formacion adicional: Curso de Python",
+            "courses",
+            "Curso de Python",
+        ),
+    ],
+)
+def test_detect_sections_supports_inline_headings(
+    line: str,
+    expected_section: str,
+    expected_content: str,
+) -> None:
+    result = detect_sections_with_warnings([line])
+
+    assert find_section_name(line) == expected_section
+    assert result.sections[expected_section] == [expected_content]
+    assert result.section_order == [expected_section]
+
+
+def test_detect_sections_supports_bilingual_inline_heading() -> None:
+    result = detect_sections(
+        ["Idiomas | Languages: English - Professional"]
+    )
+
+    assert result["languages"] == ["English - Professional"]
+
+
 def test_detect_sections_keeps_unclassified_text_before_first_heading() -> None:
     lines = [
         "Ana Garcia",

@@ -42,9 +42,7 @@ def test_extract_languages_supports_lists_and_warns_unknown_levels() -> None:
         "German",
     ]
     assert result.entries[2].level == "Business working proficiency"
-    assert result.warnings == [
-        "languages[2] contiene un nivel no normalizado."
-    ]
+    assert result.warnings == []
 
 
 def test_extract_languages_warns_for_missing_explicit_values() -> None:
@@ -60,6 +58,21 @@ def test_extract_languages_warns_for_missing_explicit_values() -> None:
     assert missing_level.entries[0].level is None
     assert missing_level.warnings == [
         "languages[0] no incluye un nivel."
+    ]
+
+
+def test_extract_languages_supports_common_compact_formats() -> None:
+    result = extract_languages(
+        [
+            "Ingles (B2); Espanol - Nativo",
+            "Nivel de frances: C1",
+        ]
+    )
+
+    assert [entry.to_dict() for entry in result] == [
+        {"language": "Ingles", "level": "B2"},
+        {"language": "Espanol", "level": "Nativo"},
+        {"language": "frances", "level": "C1"},
     ]
 
 

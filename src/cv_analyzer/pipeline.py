@@ -150,7 +150,9 @@ def _process_extracted_pdf(
     cleaned_text = clean_text(pdf_result.text)
     lines = split_clean_lines(cleaned_text)
     personal_info = extract_initial_personal_info(lines)
-    contact_info = extract_contact_info(cleaned_text)
+    contact_info = extract_contact_info(
+        "\n".join([cleaned_text, *pdf_result.embedded_links])
+    )
     section_result = detect_sections_with_warnings(lines)
     sections = section_result.sections
     education_result = extract_education_with_warnings(

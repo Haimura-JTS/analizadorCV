@@ -71,3 +71,11 @@ def test_extract_contact_info_cleans_url_punctuation_and_protocol_case() -> None
     assert contact.linkedin == "HTTPS://LinkedIn.com/in/Ana"
     assert contact.github == "https://GitHub.com/Ana"
     assert contact.portfolio == "https://ana.dev"
+
+
+def test_extract_contact_info_recovers_wrapped_linkedin_profile() -> None:
+    contact = extract_contact_info(
+        "LinkedIn\nhttps://www.linkedin.com/in/\nana-garcia"
+    )
+
+    assert contact.linkedin == "https://www.linkedin.com/in/ana-garcia"
