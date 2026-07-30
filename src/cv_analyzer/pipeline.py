@@ -11,23 +11,27 @@ import logging
 from pathlib import Path
 
 from cv_analyzer.additional_sections_extractor import (
-    extract_certifications,
-    extract_courses,
-    extract_languages,
-    extract_projects,
+    extract_certifications_with_warnings,
+    extract_courses_with_warnings,
+    extract_languages_with_warnings,
+    extract_projects_with_warnings,
 )
+from cv_analyzer.constants import EXPECTED_PROCESSING_ERROR_MESSAGE
+from cv_analyzer.constants import FILE_ACCESS_ERROR_MESSAGE
+from cv_analyzer.constants import FILE_IS_DIRECTORY_MESSAGE
+from cv_analyzer.constants import FILE_NOT_FOUND_MESSAGE
 from cv_analyzer.constants import INVALID_RESULT_MESSAGE
 from cv_analyzer.constants import UNEXPECTED_PROCESSING_ERROR_MESSAGE
 from cv_analyzer.contact_extractor import extract_contact_info
-from cv_analyzer.education_extractor import extract_education
+from cv_analyzer.education_extractor import extract_education_with_warnings
 from cv_analyzer.exceptions import CVAnalyzerError
-from cv_analyzer.experience_extractor import extract_experience
+from cv_analyzer.experience_extractor import extract_experience_with_warnings
 from cv_analyzer.json_builder import build_failed_cv_result
 from cv_analyzer.json_builder import build_structured_cv_result
 from cv_analyzer.pdf_reader import PDFTextExtractionResult, read_pdf_text
 from cv_analyzer.personal_extractor import extract_initial_personal_info
 from cv_analyzer.section_detector import detect_sections_with_warnings
-from cv_analyzer.skills_extractor import extract_skills
+from cv_analyzer.skills_extractor import extract_skills_with_warnings
 from cv_analyzer.text_cleaner import clean_text, split_clean_lines
 from cv_analyzer.validators import validate_and_annotate_cv_result
 from cv_analyzer.validators import validate_cv_result_schema
@@ -84,18 +88,17 @@ def process_cv_file_with_details(
     """
     source_file = _source_file_name(file_path)
     pdf_result: PDFTextExtractionResult | None = None
-    logger.info("Iniciando procesamiento del CV: %s", source_file)
+    logger.info("Iniciando procesamiento de un CV.")
 
     try:
         path = Path(file_path)
         pdf_result = read_pdf_text(path)
         result = _process_extracted_pdf(path, pdf_result)
-    except (CVAnalyzerError, OSError) as error:
-        error_message = str(error).strip() or error.__class__.__name__
+    except CVAnalyzerError as error:
+        error_message = _public_domain_error_message(error)
         logger.warning(
-            "No se pudo procesar el CV %s: %s",
-            source_file,
-            error_message,
+            "Procesamiento rechazado por un error esperado (%s).",
+            error.__class__.__name__,
         )
         return CVProcessingOutput(
             data=_build_failure_result(
@@ -105,11 +108,21 @@ def process_cv_file_with_details(
             ),
             extracted_text=_extracted_text(pdf_result),
         )
-    except Exception:
-        logger.exception(
-            "Fallo inesperado al procesar el CV %s.",
-            source_file,
+    except OSError as error:
+        logger.warning(
+            "No se pudo acceder al PDF (%s).",
+            error.__class__.__name__,
         )
+        return CVProcessingOutput(
+            data=_build_failure_result(
+                source_file=source_file,
+                errors=[_public_os_error_message(error)],
+                pdf_result=pdf_result,
+            ),
+            extracted_text=_extracted_text(pdf_result),
+        )
+    except Exception:
+        logger.exception("Fallo inesperado durante el procesamiento del CV.")
         return CVProcessingOutput(
             data=_build_failure_result(
                 source_file=source_file,
@@ -121,8 +134,7 @@ def process_cv_file_with_details(
 
     if _was_processed_successfully(result):
         logger.info(
-            "CV procesado correctamente: %s (%s paginas).",
-            source_file,
+            "CV procesado correctamente (%s paginas).",
             pdf_result.page_count,
         )
     return CVProcessingOutput(
@@ -141,23 +153,54 @@ def _process_extracted_pdf(
     contact_info = extract_contact_info(cleaned_text)
     section_result = detect_sections_with_warnings(lines)
     sections = section_result.sections
+    education_result = extract_education_with_warnings(
+        sections.get("education", [])
+    )
+    experience_result = extract_experience_with_warnings(
+        sections.get("experience", [])
+    )
+    skills_result = extract_skills_with_warnings(
+        sections.get("skills", [])
+    )
+    language_result = extract_languages_with_warnings(
+        sections.get("languages", [])
+    )
+    certification_result = extract_certifications_with_warnings(
+        sections.get("certifications", [])
+    )
+    course_result = extract_courses_with_warnings(
+        sections.get("courses", [])
+    )
+    project_result = extract_projects_with_warnings(
+        sections.get("projects", [])
+    )
     processed_at = _utc_timestamp()
 
     result = build_structured_cv_result(
         full_name=personal_info.full_name,
         professional_title=personal_info.professional_title,
         contact=contact_info,
-        education=extract_education(sections.get("education", [])),
-        experience=extract_experience(sections.get("experience", [])),
-        skills=extract_skills(sections.get("skills", [])),
-        languages=extract_languages(sections.get("languages", [])),
-        certifications=extract_certifications(
-            sections.get("certifications", [])
-        ),
-        courses=extract_courses(sections.get("courses", [])),
-        projects=extract_projects(sections.get("projects", [])),
+        education=education_result.entries,
+        experience=experience_result.entries,
+        skills=skills_result.skills,
+        languages=language_result.entries,
+        certifications=certification_result.entries,
+        courses=course_result.entries,
+        projects=project_result.entries,
         unclassified_text=sections.get("unclassified", []),
-        warnings=[*pdf_result.warnings, *section_result.warnings],
+        warnings=_merge_unique_messages(
+            [
+                *pdf_result.warnings,
+                *section_result.warnings,
+                *education_result.warnings,
+                *experience_result.warnings,
+                *skills_result.warnings,
+                *language_result.warnings,
+                *certification_result.warnings,
+                *course_result.warnings,
+                *project_result.warnings,
+            ]
+        ),
         summary=_join_lines(sections.get("profile", [])),
         source_file=file_path.name,
         file_size_bytes=pdf_result.file_size_bytes,
@@ -168,8 +211,7 @@ def _process_extracted_pdf(
 
     if validation_report.errors:
         logger.error(
-            "El resultado de %s no cumple el esquema: %s",
-            file_path.name,
+            "El resultado intermedio no cumple el esquema: %s",
             "; ".join(validation_report.errors),
         )
         return _build_failure_result(
@@ -196,9 +238,15 @@ def _build_failure_result(
         errors=errors,
         processed_at=processed_at or _utc_timestamp(),
         file_size_bytes=(
-            pdf_result.file_size_bytes if pdf_result is not None else None
+            _non_negative_int(pdf_result.file_size_bytes)
+            if pdf_result is not None
+            else None
         ),
-        page_count=pdf_result.page_count if pdf_result is not None else None,
+        page_count=(
+            _non_negative_int(pdf_result.page_count)
+            if pdf_result is not None
+            else None
+        ),
         warnings=_merge_unique_messages(
             [
                 *(pdf_result.warnings if pdf_result is not None else []),
@@ -216,6 +264,19 @@ def _source_file_name(file_path: str | Path) -> str | None:
         return None
 
     return path.name or str(path) or None
+
+
+def _public_domain_error_message(error: CVAnalyzerError) -> str:
+    message = str(error).strip()
+    return message or EXPECTED_PROCESSING_ERROR_MESSAGE
+
+
+def _public_os_error_message(error: OSError) -> str:
+    if isinstance(error, FileNotFoundError):
+        return FILE_NOT_FOUND_MESSAGE
+    if isinstance(error, IsADirectoryError):
+        return FILE_IS_DIRECTORY_MESSAGE
+    return FILE_ACCESS_ERROR_MESSAGE
 
 
 def _join_lines(lines: list[str]) -> str | None:
@@ -237,8 +298,26 @@ def _extracted_text(
     return pdf_result.text if pdf_result is not None else None
 
 
-def _merge_unique_messages(messages: list[str]) -> list[str]:
-    return list(dict.fromkeys(messages))
+def _merge_unique_messages(messages: list[object]) -> list[str]:
+    unique_messages: list[str] = []
+    seen_messages: set[str] = set()
+
+    for message in messages:
+        if not isinstance(message, str):
+            continue
+        cleaned_message = message.strip()
+        if not cleaned_message or cleaned_message in seen_messages:
+            continue
+        seen_messages.add(cleaned_message)
+        unique_messages.append(cleaned_message)
+
+    return unique_messages
+
+
+def _non_negative_int(value: object) -> int | None:
+    if type(value) is not int or value < 0:
+        return None
+    return value
 
 
 def _utc_timestamp() -> str:

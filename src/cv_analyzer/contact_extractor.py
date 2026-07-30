@@ -18,16 +18,23 @@ EMAIL_PATTERN = re.compile(
     r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
 )
 
-# Reconoce telefonos frecuentes en CVs europeos e internacionales. Puede
-# capturar falsos positivos si una linea contiene muchos numeros separados.
+# Localiza candidatos de telefono con digitos y separadores convencionales.
+# La funcion extract_phone aplica despues un limite de digitos para descartar
+# rangos de anos y secuencias demasiado largas.
 PHONE_PATTERN = re.compile(
-    r"(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?){2,5}\d{2,4}"
+    r"(?<![\w@])\+?\d(?:[\d(). \t-]*\d)?(?![\w@])"
 )
 
-# Reconoce URLs completas y dominios escritos sin protocolo.
+# Reconoce URLs completas y dominios escritos sin protocolo. La limpieza
+# posterior retira puntuacion propia de la frase, no de la URL.
 URL_PATTERN = re.compile(
-    r"(?:https?://)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:/[^\s]*)?"
+    r"(?:https?://)?(?:www\.)?[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:/[^\s]*)?",
+    re.IGNORECASE,
 )
+
+MIN_PHONE_DIGITS = 9
+MAX_PHONE_DIGITS = 15
+TRAILING_URL_PUNCTUATION = ".,;:!?)]}"
 
 
 @dataclass(frozen=True)
@@ -73,15 +80,20 @@ def extract_phone(text: str) -> str | None:
     Returns:
         Telefono detectado o None si no hay coincidencias fiables.
     """
-    match = PHONE_PATTERN.search(text)
-    return match.group(0).strip() if match else None
+    for match in PHONE_PATTERN.finditer(text):
+        candidate = " ".join(match.group(0).split())
+        digit_count = sum(character.isdigit() for character in candidate)
+        if MIN_PHONE_DIGITS <= digit_count <= MAX_PHONE_DIGITS:
+            return candidate
+    return None
 
 
 def _normalize_url(url: str) -> str:
     """Anade protocolo a una URL cuando el curriculum no lo incluye."""
-    if url.startswith(("http://", "https://")):
-        return url
-    return f"https://{url}"
+    cleaned_url = url.rstrip(TRAILING_URL_PUNCTUATION)
+    if cleaned_url.lower().startswith(("http://", "https://")):
+        return cleaned_url
+    return f"https://{cleaned_url}"
 
 
 def _find_url_containing(text: str, marker: str) -> str | None:
@@ -144,7 +156,9 @@ def _iter_standalone_urls(text: str) -> Iterator[str]:
             for email_start, email_end in email_spans
         )
         if not overlaps_email:
-            yield match.group(0)
+            cleaned_url = match.group(0).rstrip(TRAILING_URL_PUNCTUATION)
+            if cleaned_url:
+                yield cleaned_url
 
 
 def extract_contact_info(text: str) -> ContactInfo:

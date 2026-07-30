@@ -61,7 +61,7 @@ def build_basic_cv_result(
             "processing_version": "1.0",
             "warnings": [],
             "errors": [],
-            "unclassified_text": unclassified_text,
+            "unclassified_text": list(unclassified_text),
         },
     }
 
@@ -121,7 +121,10 @@ def build_structured_cv_result(
         "contact": contact.to_dict(),
         "education": [entry.to_dict() for entry in education],
         "experience": [entry.to_dict() for entry in experience],
-        "skills": skills,
+        "skills": {
+            category: list(values)
+            for category, values in skills.items()
+        },
         "languages": [entry.to_dict() for entry in languages],
         "certifications": [entry.to_dict() for entry in certifications],
         "courses": [entry.to_dict() for entry in courses],
@@ -133,9 +136,9 @@ def build_structured_cv_result(
             "processed_at": processed_at,
             "processed_successfully": True,
             "processing_version": "1.0",
-            "warnings": warnings or [],
+            "warnings": list(warnings or []),
             "errors": [],
-            "unclassified_text": unclassified_text,
+            "unclassified_text": list(unclassified_text),
         },
     }
 

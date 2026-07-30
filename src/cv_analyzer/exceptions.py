@@ -22,7 +22,15 @@ class EmptyDocumentError(CVAnalyzerError):
     """Se lanza cuando el documento no contiene texto extraible."""
 
 
+class ScannedPDFError(EmptyDocumentError):
+    """Se lanza cuando un PDF parece contener solo imagenes sin texto."""
+
+
 class ProtectedPDFError(CVAnalyzerError):
+    """Base compatible para errores de PDF protegido."""
+
+
+class PasswordProtectedPDFError(ProtectedPDFError):
     """Se lanza cuando el PDF requiere contraseña."""
 
 

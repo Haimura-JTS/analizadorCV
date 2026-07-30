@@ -2,23 +2,44 @@
 Modulo encargado de detectar secciones principales de un curriculum.
 
 Divide lineas limpias en bloques segun encabezados conocidos en espanol e
-ingles. Conserva el texto previo al primer encabezado y cualquier contenido
-no interpretable dentro de la seccion activa.
+ingles. Admite decoracion, numeracion y variantes bilingues conservadoras.
+Conserva el texto previo al primer encabezado y cualquier contenido que no
+pueda asignarse con certeza.
 
 No extrae datos estructurados de cada seccion ni normaliza fechas.
 """
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import re
 import unicodedata
+
+
+# Retira numeraciones habituales como `1.`, `2 -` o `IV)` despues de eliminar
+# la decoracion exterior. No elimina numeros sin delimitador.
+HEADING_NUMBER_PREFIX_PATTERN = re.compile(
+    r"^(?:\d+(?:\.\d+)*|[ivxlcdm]+)\s*[.)-]\s*",
+    re.IGNORECASE,
+)
+
+# Separa encabezados bilingues o equivalentes escritos con barra, tuberia o
+# parentesis. Todas las partes deben ser aliases conocidos para aceptar la
+# linea como encabezado.
+HEADING_VARIANT_SEPARATOR_PATTERN = re.compile(r"\s*(?:/|\||\(|\))\s*")
 
 
 SECTION_ALIASES: dict[str, set[str]] = {
     "profile": {
+        "acerca de mi",
+        "extracto profesional",
+        "objetivo profesional",
         "perfil",
         "perfil profesional",
         "resumen",
         "sobre mi",
+        "about me",
+        "career objective",
+        "professional summary",
         "summary",
         "profile",
         "professional profile",
@@ -27,8 +48,13 @@ SECTION_ALIASES: dict[str, set[str]] = {
         "experiencia",
         "experiencia laboral",
         "experiencia profesional",
+        "experiencia relevante",
         "historial laboral",
+        "trayectoria profesional",
+        "career history",
         "experience",
+        "relevant experience",
+        "work history",
         "work experience",
         "professional experience",
         "employment history",
@@ -38,38 +64,68 @@ SECTION_ALIASES: dict[str, set[str]] = {
         "formacion academica",
         "educacion",
         "estudios",
+        "titulaciones",
+        "academic education",
         "education",
         "academic background",
+        "qualifications",
     },
     "skills": {
         "habilidades",
+        "habilidades tecnicas",
         "competencias",
+        "competencias clave",
+        "competencias tecnicas",
+        "conocimientos",
+        "tecnologias",
         "aptitudes",
+        "core competencies",
         "skills",
+        "skills and tools",
+        "tech stack",
         "technical skills",
         "competencies",
+        "tools",
     },
     "languages": {
         "idiomas",
+        "competencias linguisticas",
+        "language skills",
         "languages",
     },
     "certifications": {
+        "acreditaciones",
         "certificaciones",
         "certificados",
         "certifications",
         "certificates",
+        "licenses and certifications",
     },
     "courses": {
         "cursos",
+        "cursos and formacion",
         "formacion complementaria",
         "additional training",
+        "courses and training",
         "courses",
+        "professional development",
+        "training",
     },
     "projects": {
         "proyectos",
+        "proyectos destacados",
+        "proyectos personales",
+        "featured projects",
+        "project experience",
         "projects",
         "personal projects",
     },
+}
+
+SECTION_BY_ALIAS = {
+    alias: section_name
+    for section_name, aliases in SECTION_ALIASES.items()
+    for alias in aliases
 }
 
 
@@ -81,19 +137,22 @@ class SectionDetectionResult:
     Args:
         sections: Diccionario con las lineas agrupadas por seccion.
         warnings: Advertencias tecnicas no bloqueantes.
+        section_order: Secciones reconocidas en su orden de aparicion,
+            incluidas las repeticiones.
     """
 
     sections: dict[str, list[str]]
     warnings: list[str]
+    section_order: list[str] = field(default_factory=list)
 
 
 def normalize_heading(text: str) -> str:
     """
     Normaliza un posible encabezado antes de compararlo.
 
-    Convierte el texto a minusculas, elimina espacios exteriores, retira dos
-    puntos finales y normaliza acentos. Asi se consideran equivalentes
-    encabezados como "Experiencia", "EXPERIENCIA:" y " experiencia ".
+    Convierte el texto a minusculas, normaliza acentos, elimina decoracion
+    exterior y retira prefijos numericos. Asi se consideran equivalentes
+    encabezados como "Experiencia", "1. EXPERIENCIA:" y "• Experiencia •".
 
     Args:
         text: Linea que podria representar un encabezado.
@@ -101,13 +160,21 @@ def normalize_heading(text: str) -> str:
     Returns:
         Encabezado normalizado.
     """
-    stripped_text = text.strip().lower().removesuffix(":").strip()
-    decomposed_text = unicodedata.normalize("NFD", stripped_text)
-    return "".join(
+    lowered_text = text.strip().casefold().replace("&", " and ")
+    decomposed_text = unicodedata.normalize("NFD", lowered_text)
+    accentless_text = "".join(
         character
         for character in decomposed_text
         if unicodedata.category(character) != "Mn"
     )
+    collapsed_text = " ".join(accentless_text.split())
+    undecorated_text = _strip_edge_decoration(collapsed_text)
+    unnumbered_text = HEADING_NUMBER_PREFIX_PATTERN.sub(
+        "",
+        undecorated_text,
+        count=1,
+    )
+    return _strip_edge_decoration(unnumbered_text)
 
 
 def find_section_name(line: str) -> str | None:
@@ -124,13 +191,8 @@ def find_section_name(line: str) -> str | None:
     Returns:
         Nombre interno de la seccion o None si la linea no es encabezado.
     """
-    normalized_line = normalize_heading(line)
-
-    for section_name, aliases in SECTION_ALIASES.items():
-        if normalized_line in aliases:
-            return section_name
-
-    return None
+    candidates = _find_section_candidates(line)
+    return next(iter(candidates)) if len(candidates) == 1 else None
 
 
 def detect_sections(lines: Iterable[str]) -> dict[str, list[str]]:
@@ -164,11 +226,17 @@ def detect_sections_with_warnings(
     """
     sections: dict[str, list[str]] = {"unclassified": []}
     warnings: list[str] = []
+    section_order: list[str] = []
     current_section = "unclassified"
     seen_sections: set[str] = set()
 
     for line in lines:
-        detected_section = find_section_name(line)
+        section_candidates = _find_section_candidates(line)
+        detected_section = (
+            next(iter(section_candidates))
+            if len(section_candidates) == 1
+            else None
+        )
 
         if detected_section is not None:
             if detected_section in seen_sections:
@@ -176,12 +244,61 @@ def detect_sections_with_warnings(
                     f"Seccion duplicada detectada: {detected_section}."
                 )
             seen_sections.add(detected_section)
+            section_order.append(detected_section)
             current_section = detected_section
             sections.setdefault(current_section, [])
+            continue
+
+        if len(section_candidates) > 1:
+            warnings.append(
+                "Encabezado ambiguo conservado sin clasificar: "
+                f"{normalize_heading(line)}."
+            )
+            current_section = "unclassified"
+            sections[current_section].append(line)
             continue
 
         # Conservamos cualquier contenido no reconocido para evitar perdidas
         # silenciosas durante el procesamiento del curriculum.
         sections.setdefault(current_section, []).append(line)
 
-    return SectionDetectionResult(sections=sections, warnings=warnings)
+    return SectionDetectionResult(
+        sections=sections,
+        warnings=warnings,
+        section_order=section_order,
+    )
+
+
+def _find_section_candidates(line: str) -> set[str]:
+    normalized_line = normalize_heading(line)
+    direct_match = SECTION_BY_ALIAS.get(normalized_line)
+    if direct_match is not None:
+        return {direct_match}
+
+    variants = [
+        variant
+        for variant in HEADING_VARIANT_SEPARATOR_PATTERN.split(
+            normalized_line
+        )
+        if variant
+    ]
+    if len(variants) < 2:
+        return set()
+
+    matches = [SECTION_BY_ALIAS.get(variant) for variant in variants]
+    if any(match is None for match in matches):
+        return set()
+
+    return {match for match in matches if match is not None}
+
+
+def _strip_edge_decoration(text: str) -> str:
+    start_index = 0
+    end_index = len(text)
+
+    while start_index < end_index and not text[start_index].isalnum():
+        start_index += 1
+    while end_index > start_index and not text[end_index - 1].isalnum():
+        end_index -= 1
+
+    return text[start_index:end_index].strip()

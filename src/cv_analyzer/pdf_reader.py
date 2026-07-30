@@ -1,8 +1,9 @@
 """
 Modulo encargado de leer y validar documentos PDF.
 
-Contiene funciones relacionadas con la comprobacion basica del archivo,
-apertura del documento, conteo de paginas y extraccion de texto.
+Contiene funciones relacionadas con la validacion del archivo, apertura del
+documento, conteo de paginas, extraccion de texto y deteccion conservadora de
+paginas posiblemente escaneadas.
 
 No clasifica secciones ni interpreta datos personales.
 """
@@ -13,10 +14,16 @@ from pathlib import Path
 import fitz
 
 from cv_analyzer.config import MAX_FILE_SIZE_BYTES
-from cv_analyzer.constants import ALLOWED_PDF_EXTENSION, PDF_EMPTY_TEXT_MESSAGE
-from cv_analyzer.constants import PDF_PROTECTED_MESSAGE
+from cv_analyzer.constants import ALLOWED_PDF_EXTENSION, PDF_EMPTY_FILE_MESSAGE
+from cv_analyzer.constants import FILE_IS_DIRECTORY_MESSAGE
+from cv_analyzer.constants import FILE_NOT_FOUND_MESSAGE
+from cv_analyzer.constants import PDF_EMPTY_PAGES_WARNING_TEMPLATE
+from cv_analyzer.constants import PDF_EMPTY_TEXT_MESSAGE, PDF_NO_PAGES_MESSAGE
+from cv_analyzer.constants import PDF_PROTECTED_MESSAGE, PDF_SCANNED_MESSAGE
+from cv_analyzer.constants import PDF_SCANNED_PAGES_WARNING_TEMPLATE
 from cv_analyzer.exceptions import EmptyDocumentError, FileTooLargeError
-from cv_analyzer.exceptions import InvalidFileTypeError, PDFReadError, ProtectedPDFError
+from cv_analyzer.exceptions import InvalidFileTypeError, PDFReadError
+from cv_analyzer.exceptions import PasswordProtectedPDFError, ScannedPDFError
 
 
 @dataclass(frozen=True)
@@ -48,18 +55,23 @@ def validate_pdf_file(file_path: Path) -> None:
         FileNotFoundError: Si la ruta no existe.
         IsADirectoryError: Si la ruta apunta a un directorio.
         InvalidFileTypeError: Si el archivo no tiene extension PDF.
+        EmptyDocumentError: Si el archivo no contiene ningun byte.
         FileTooLargeError: Si el archivo supera el tamano maximo configurado.
     """
     if not file_path.exists():
-        raise FileNotFoundError(f"No existe el archivo: {file_path}")
+        raise FileNotFoundError(FILE_NOT_FOUND_MESSAGE)
 
     if not file_path.is_file():
-        raise IsADirectoryError(f"La ruta no apunta a un archivo: {file_path}")
+        raise IsADirectoryError(FILE_IS_DIRECTORY_MESSAGE)
 
     if file_path.suffix.lower() != ALLOWED_PDF_EXTENSION:
         raise InvalidFileTypeError("El archivo debe tener extension PDF.")
 
-    if file_path.stat().st_size > MAX_FILE_SIZE_BYTES:
+    file_size_bytes = file_path.stat().st_size
+    if file_size_bytes == 0:
+        raise EmptyDocumentError(PDF_EMPTY_FILE_MESSAGE)
+
+    if file_size_bytes > MAX_FILE_SIZE_BYTES:
         raise FileTooLargeError("El archivo supera el tamano maximo permitido.")
 
 
@@ -78,8 +90,10 @@ def read_pdf_text(file_path: Path) -> PDFTextExtractionResult:
         IsADirectoryError: Si la ruta apunta a un directorio.
         InvalidFileTypeError: Si el archivo no tiene extension PDF.
         FileTooLargeError: Si el archivo supera el tamano maximo configurado.
-        ProtectedPDFError: Si el PDF requiere contraseña.
-        EmptyDocumentError: Si el PDF no contiene texto extraible.
+        PasswordProtectedPDFError: Si el PDF requiere contraseña.
+        ScannedPDFError: Si parece contener solo imagenes sin texto.
+        EmptyDocumentError: Si el archivo esta vacio, no tiene paginas o no
+            contiene texto extraible.
         PDFReadError: Si el documento no puede abrirse o leerse.
     """
     validate_pdf_file(file_path)
@@ -88,11 +102,14 @@ def read_pdf_text(file_path: Path) -> PDFTextExtractionResult:
     try:
         with fitz.open(file_path) as document:
             if document.needs_pass:
-                raise ProtectedPDFError(PDF_PROTECTED_MESSAGE)
+                raise PasswordProtectedPDFError(PDF_PROTECTED_MESSAGE)
 
             page_count = document.page_count
-            page_texts = [page.get_text("text") for page in document]
-    except ProtectedPDFError:
+            if page_count == 0:
+                raise EmptyDocumentError(PDF_NO_PAGES_MESSAGE)
+
+            page_texts, page_has_images = _extract_document_pages(document)
+    except (PasswordProtectedPDFError, EmptyDocumentError):
         raise
     except Exception as error:
         raise PDFReadError("No se pudo leer el documento PDF.") from error
@@ -100,13 +117,15 @@ def read_pdf_text(file_path: Path) -> PDFTextExtractionResult:
     extracted_text = "\n".join(page_texts).strip()
 
     if not extracted_text:
+        if any(page_has_images):
+            raise ScannedPDFError(PDF_SCANNED_MESSAGE)
         raise EmptyDocumentError(PDF_EMPTY_TEXT_MESSAGE)
 
     return PDFTextExtractionResult(
         text=extracted_text,
         page_count=page_count,
         file_size_bytes=file_size_bytes,
-        warnings=[],
+        warnings=_build_page_warnings(page_texts, page_has_images),
     )
 
 
@@ -123,8 +142,56 @@ def extract_text_from_pdf(file_path: Path) -> str:
     Raises:
         FileNotFoundError: Si la ruta no existe.
         InvalidFileTypeError: Si el archivo no tiene extension PDF.
-        ProtectedPDFError: Si el PDF requiere contraseña.
+        PasswordProtectedPDFError: Si el PDF requiere contraseña.
+        ScannedPDFError: Si parece contener solo imagenes sin texto.
         EmptyDocumentError: Si el PDF no contiene texto extraible.
         PDFReadError: Si el documento no puede abrirse o leerse.
     """
     return read_pdf_text(file_path).text
+
+
+def _extract_document_pages(
+    document: fitz.Document,
+) -> tuple[list[str], list[bool]]:
+    page_texts: list[str] = []
+    page_has_images: list[bool] = []
+
+    for page in document:
+        page_texts.append(page.get_text("text"))
+        page_has_images.append(bool(page.get_images(full=True)))
+
+    return page_texts, page_has_images
+
+
+def _build_page_warnings(
+    page_texts: list[str],
+    page_has_images: list[bool],
+) -> list[str]:
+    scanned_pages: list[str] = []
+    empty_pages: list[str] = []
+
+    for page_number, (page_text, has_images) in enumerate(
+        zip(page_texts, page_has_images, strict=True),
+        start=1,
+    ):
+        if page_text.strip():
+            continue
+        if has_images:
+            scanned_pages.append(str(page_number))
+        else:
+            empty_pages.append(str(page_number))
+
+    warnings: list[str] = []
+    if scanned_pages:
+        warnings.append(
+            PDF_SCANNED_PAGES_WARNING_TEMPLATE.format(
+                pages=", ".join(scanned_pages)
+            )
+        )
+    if empty_pages:
+        warnings.append(
+            PDF_EMPTY_PAGES_WARNING_TEMPLATE.format(
+                pages=", ".join(empty_pages)
+            )
+        )
+    return warnings

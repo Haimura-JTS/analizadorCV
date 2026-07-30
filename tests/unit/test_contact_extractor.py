@@ -1,4 +1,6 @@
-from cv_analyzer.contact_extractor import extract_contact_info
+import pytest
+
+from cv_analyzer.contact_extractor import extract_contact_info, extract_phone
 
 
 def test_extract_contact_info_detects_email_phone_and_links() -> None:
@@ -40,3 +42,32 @@ def test_extract_contact_info_does_not_treat_email_fragments_as_urls() -> None:
     assert contact.linkedin == "https://linkedin.com/in/alex-rivera"
     assert contact.github == "https://github.com/alex-rivera"
     assert contact.portfolio == "https://alexrivera.dev"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Experiencia: 2020 - 2024",
+        "Fecha: 01/2024",
+        "Codigo interno: 12345678",
+        "Numero demasiado largo: 1234567890123456",
+    ],
+)
+def test_extract_phone_rejects_non_phone_numeric_values(text: str) -> None:
+    assert extract_phone(text) is None
+
+
+def test_extract_phone_accepts_parentheses_and_international_prefix() -> None:
+    assert extract_phone("+34 (600) 123-456") == "+34 (600) 123-456"
+
+
+def test_extract_contact_info_cleans_url_punctuation_and_protocol_case() -> None:
+    contact = extract_contact_info(
+        "HTTPS://LinkedIn.com/in/Ana).\n"
+        "GitHub.com/Ana,\n"
+        "https://ana.dev;"
+    )
+
+    assert contact.linkedin == "HTTPS://LinkedIn.com/in/Ana"
+    assert contact.github == "https://GitHub.com/Ana"
+    assert contact.portfolio == "https://ana.dev"

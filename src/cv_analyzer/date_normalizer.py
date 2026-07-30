@@ -16,7 +16,8 @@ import unicodedata
 # Reconoce rangos con separadores visibles entre dos fechas.
 # No divide fechas ISO como 2024-01 porque exige espacios alrededor.
 DATE_RANGE_SEPARATOR_PATTERN = re.compile(
-    "\\s+(?:-|\\u2013|\\u2014|a|to)\\s+"
+    r"\s+(?:-|\u2013|\u2014|a|hasta|to|through)\s+",
+    re.IGNORECASE,
 )
 
 # Reconoce formatos numericos como 2024-01 o 2024/01.
@@ -176,8 +177,7 @@ def normalize_date_range(value: str | None) -> NormalizedDateRange:
 
     start_raw, end_raw = parts
     start_date = normalize_date(start_raw)
-    normalized_end = _normalize_lookup_text(end_raw)
-    current = normalized_end in CURRENT_DATE_ALIASES
+    current = is_current_date(end_raw)
     end_date = None if current else normalize_date(end_raw)
     warnings: list[str] = []
 
@@ -189,8 +189,64 @@ def normalize_date_range(value: str | None) -> NormalizedDateRange:
     return NormalizedDateRange(start_date, end_date, current, warnings)
 
 
+def is_current_date(value: str | None) -> bool:
+    """
+    Indica si un valor representa un periodo que sigue vigente.
+
+    Args:
+        value: Texto corto que puede contener un alias de actualidad.
+
+    Returns:
+        True solo para un alias completo conocido.
+    """
+    if value is None:
+        return False
+    return _normalize_lookup_text(value) in CURRENT_DATE_ALIASES
+
+
+def is_date_range_inverted(
+    start_date: str | None,
+    end_date: str | None,
+) -> bool:
+    """
+    Detecta inversion respetando la precision parcial de las fechas.
+
+    Un ano aislado representa desde enero hasta diciembre. Por tanto,
+    `2024-12` a `2024` no se marca como invertido, porque ambos valores
+    todavia pueden describir un periodo coherente.
+
+    Args:
+        start_date: Fecha inicial normalizada o normalizable.
+        end_date: Fecha final normalizada o normalizable.
+
+    Returns:
+        True solo si el inicio minimo es posterior al final maximo.
+    """
+    start_bounds = _partial_date_bounds(start_date)
+    end_bounds = _partial_date_bounds(end_date)
+    if start_bounds is None or end_bounds is None:
+        return False
+    return start_bounds[0] > end_bounds[1]
+
+
 def _format_year_month(year: str, month: str) -> str:
     return f"{year}-{int(month):02d}"
+
+
+def _partial_date_bounds(
+    value: str | None,
+) -> tuple[tuple[int, int], tuple[int, int]] | None:
+    normalized_value = normalize_date(value)
+    if normalized_value is None:
+        return None
+
+    if "-" in normalized_value:
+        year, month = normalized_value.split("-", maxsplit=1)
+        bound = (int(year), int(month))
+        return bound, bound
+
+    year = int(normalized_value)
+    return (year, 1), (year, 12)
 
 
 def _normalize_lookup_text(value: str) -> str:
@@ -201,4 +257,3 @@ def _normalize_lookup_text(value: str) -> str:
         for character in decomposed_value
         if unicodedata.category(character) != "Mn"
     )
-
