@@ -7,10 +7,10 @@
 Detectar documentos sin capa de texto e integrar OCR local con advertencias
 sobre calidad y coste de procesamiento.
 
-### Separacion de entradas
+### Segmentacion avanzada de entradas
 
-Identificar varias experiencias y titulaciones dentro de una misma seccion.
-La version actual conserva el bloque completo en una sola entrada.
+Usar posicion y tipografia del PDF para complementar los limites textuales
+actuales y distinguir entradas sin fechas ni separadores.
 
 ### Orden de lectura
 
@@ -25,11 +25,13 @@ verificar la instalacion limpia en cada cambio.
 ## Prioridad media
 
 - Ampliar aliases de encabezados sin introducir coincidencias parciales.
-- Extraer empresa, puesto, institucion y titulacion con reglas verificables.
-- Clasificar habilidades en lenguajes, herramientas, tecnicas y blandas.
+- Ampliar vocabularios de puestos, titulaciones, instituciones y habilidades
+  con un corpus anonimizado y pruebas contra falsos positivos.
+- Reconocer mas formatos multilinea de certificaciones, cursos y proyectos.
 - Detectar ubicacion sin confundirla con datos de contacto.
-- Separar logros de responsabilidades.
-- Mejorar fechas con rangos localizados y precisiones mixtas.
+- Refinar la separacion de logros y responsabilidades con reglas medibles.
+- Incorporar dias, trimestres y formatos regionales adicionales sin completar
+  precision ausente.
 - Permitir varios correos, telefonos y perfiles cuando existan.
 
 ## Experiencia de usuario
@@ -37,12 +39,15 @@ verificar la instalacion limpia en cada cambio.
 - Mostrar una vista editable antes de descargar el JSON.
 - Permitir corregir manualmente secciones no reconocidas.
 - Comparar el texto original con los campos extraidos.
-- Incorporar accesibilidad y pruebas visuales automatizadas.
+- Ampliar la accesibilidad con auditorias de tecnologias de apoyo y convertir
+  la comprobacion visual responsive en una regresion versionada.
 - Ofrecer procesamiento por lotes con limites configurables.
 
 ## Calidad y operacion
 
 - Anadir analisis estatico y formateo automatizado.
+- Incorporar identificadores de correlacion y logging estructurado sin datos
+  del documento.
 - Generar un esquema JSON formal desde los modelos Pydantic.
 - Medir precision con un corpus anonimizado y versionado.
 - Registrar metricas locales sin almacenar contenido personal.

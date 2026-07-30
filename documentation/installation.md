@@ -69,6 +69,12 @@ python -m streamlit run app.py
 
 La terminal mostrara la URL local. Para detener el servidor, use `Ctrl+C`.
 
+La interfaz admite un unico PDF de hasta 10 MB mediante seleccion o arrastre.
+El boton **Analizar** permanece deshabilitado hasta recibir un archivo. Tras el
+procesamiento se muestran el estado, los avisos, las metricas y las vistas de
+resumen, texto y JSON; la descarga queda disponible en la cabecera del
+resultado incluso cuando la salida contiene errores controlados.
+
 ## Ejecutar el ejemplo
 
 ```powershell
@@ -95,13 +101,14 @@ python -m pytest tests/integration
 Una instalacion preparada debe cumplir:
 
 1. `python -c "import cv_analyzer"` termina sin error.
-2. `python -m streamlit run app.py` inicia el servidor.
-3. `python examples/run_example.py` genera un JSON correcto.
-4. `python -m pytest` ejecuta la suite y comprueba el umbral de cobertura.
+2. `python -m pip check` no detecta dependencias incompatibles.
+3. `python -m streamlit run app.py` inicia el servidor.
+4. `python examples/run_example.py` genera un JSON correcto.
+5. `python -m pytest` ejecuta la suite y comprueba el umbral de cobertura.
 
 ## Configuracion
 
-La version 0.1.0 no requiere variables de entorno ni credenciales.
+La version 0.2.0 no requiere variables de entorno ni credenciales.
 
 - El limite de archivo se define en `src/cv_analyzer/config.py`.
 - El tema y opciones de Streamlit viven en `.streamlit/config.toml`.
@@ -116,7 +123,12 @@ ruta completa del ejecutable.
 
 ### El PDF no contiene texto extraible
 
-El archivo puede ser un escaneo. Esta version no incorpora OCR.
+Un PDF textual puede estar vacio. Si el lector detecta imagenes sin capa de
+texto, muestra un error especifico de posible escaneo. Esta version no
+incorpora OCR.
+
+Cuando solo algunas paginas carecen de texto, el procesamiento continua y el
+resultado indica sus numeros en `metadata.warnings`.
 
 ### El PDF esta protegido
 

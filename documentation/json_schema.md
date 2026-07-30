@@ -28,10 +28,19 @@ rechaza campos inesperados.
 - Una bandera siempre usa `true` o `false`.
 - Una fecha usa `YYYY-MM`, `YYYY` o `null`.
 - `processed_at` usa ISO 8601 con zona UTC.
+- `file_size_bytes` y `page_count` son enteros no negativos o `null`.
+- Correo y URLs de contacto deben cumplir sus formatos normalizados.
 - Las lineas previas al primer encabezado se conservan en
   `metadata.unclassified_text`.
+- Las entradas repetibles conservan el orden detectado dentro de su seccion.
+- Los campos estructurales ambiguos permanecen en `null`; cuando es relevante,
+  `metadata.warnings` identifica la seccion y el indice afectados.
 - Las advertencias no invalidan el resultado.
 - Los errores establecen `processed_successfully` en `false`.
+- Un resultado no puede declarar exito si contiene errores.
+
+Los modelos usan validacion estricta: no convierten cadenas como `"1"` en
+enteros ni valores como `1` en booleanos. Los campos inesperados se rechazan.
 
 ## Estructura resumida
 
@@ -81,11 +90,16 @@ rechaza campos inesperados.
 ### Education
 
 `institution`, `degree`, `start_date`, `end_date`, `status` y `description`.
+`status` puede ser `in_progress` cuando el rango indica actualidad.
+`description` conserva el bloque textual completo de la entrada.
 
 ### Experience
 
 `company`, `position`, `start_date`, `end_date`, `current`, `description`,
 `responsibilities` y `achievements`.
+
+Las responsabilidades y los logros conservan el orden de sus vinetas. La
+descripcion mantiene todas las lineas usadas para construir la entrada.
 
 ### Languages
 
@@ -98,10 +112,25 @@ rechaza campos inesperados.
 ### Courses
 
 `name`, `institution`, `start_date`, `end_date` y `status`.
+`status` puede ser `in_progress`.
 
 ### Projects
 
 `name`, `description`, `technologies` y `url`.
+
+## Normalizacion y coherencia
+
+Los meses y anos reconocibles se convierten antes de validar el esquema. Un
+valor ambiguo se sustituye por `null` y produce una advertencia con la ruta,
+por ejemplo `experience[0].start_date`.
+
+Una fecha anual representa un intervalo de enero a diciembre al comprobar
+orden. Por ello, `2024-12` seguido de `2024` no se considera definitivamente
+invertido, mientras que `2025-01` seguido de `2024` si genera una advertencia.
+
+Los duplicados se eliminan sin distinguir mayusculas solo dentro de listas
+escalares seguras. Se conserva el primer valor y se registra una advertencia.
+No se eliminan entradas completas ni lineas de `unclassified_text`.
 
 ## Resultado fallido
 
@@ -121,3 +150,13 @@ vacias y `metadata` contiene:
 Las demas claves de `metadata` siguen presentes. El ejemplo completo de una
 salida correcta esta en
 [`../examples/example_result.json`](../examples/example_result.json).
+
+Un PDF basado solo en imagenes utiliza el mismo contrato y comunica que parece
+escaneado en `metadata.errors`. Si solo algunas paginas carecen de texto, el
+procesamiento puede completarse y sus numeros se conservan en
+`metadata.warnings`.
+
+Los errores de sistema operativo se traducen antes de entrar en el JSON. Las
+rutas locales y el detalle de excepciones inesperadas no se incluyen en
+`metadata.errors`. Si un fallo ocurre despues de leer el PDF, los metadatos
+tecnicos validos ya disponibles se mantienen en la salida fallida.

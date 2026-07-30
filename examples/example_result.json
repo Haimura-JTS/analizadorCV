@@ -15,7 +15,7 @@
   "education": [
     {
       "institution": null,
-      "degree": null,
+      "degree": "Grado en Ingenieria Informatica",
       "start_date": null,
       "end_date": null,
       "status": null,
@@ -24,8 +24,8 @@
   ],
   "experience": [
     {
-      "company": null,
-      "position": null,
+      "company": "Equipo Demo",
+      "position": "Backend Developer",
       "start_date": null,
       "end_date": null,
       "current": false,
@@ -38,12 +38,14 @@
   ],
   "skills": {
     "technical": [
-      "Python",
-      "FastAPI",
+      "FastAPI"
+    ],
+    "tools": [
       "PostgreSQL"
     ],
-    "tools": [],
-    "programming_languages": [],
+    "programming_languages": [
+      "Python"
+    ],
     "soft_skills": []
   },
   "languages": [
@@ -69,7 +71,9 @@
     "processed_at": "2026-01-01T00:00:00+00:00",
     "processed_successfully": true,
     "processing_version": "1.0",
-    "warnings": [],
+    "warnings": [
+      "education[0] no permite diferenciar institucion y titulacion."
+    ],
     "errors": [],
     "unclassified_text": [
       "Alex Ejemplo",

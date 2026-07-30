@@ -29,10 +29,10 @@ La solucion debe distinguir entre:
 - Ofrecer una interfaz sencilla y una API reutilizable.
 - Documentar limites y decisiones tecnicas.
 
-## Alcance de la version 0.1.0
+## Alcance de la version 0.2.0
 
 La version incluye lectura PDF, limpieza, deteccion de secciones, extractores
-conservadores, normalizacion inicial de fechas, validacion Pydantic, pipeline,
+conservadores, normalizacion de fechas, validacion Pydantic, pipeline,
 interfaz Streamlit, pruebas, ejemplos y documentacion.
 
 Quedan fuera OCR, interpretacion semantica avanzada, persistencia, servicios
@@ -40,7 +40,8 @@ externos y procesamiento por lotes.
 
 ## Metodologia
 
-El desarrollo se dividio en diez etapas:
+El desarrollo partio de un diagnostico inicial y se dividio en diez etapas de
+implementacion:
 
 1. Estructura y alcance.
 2. Lectura y validacion PDF.
@@ -53,7 +54,8 @@ El desarrollo se dividio en diez etapas:
 9. Pruebas y robustez.
 10. Documentacion y entrega.
 
-Cada etapa mantuvo responsabilidades pequenas y un commit identificable.
+Cada etapa mantuvo responsabilidades pequenas, un entregable revisable y una
+propuesta de commit. No se crearon commits durante la revision asistida.
 
 ## Arquitectura
 
@@ -107,13 +109,49 @@ contenido ambiguo permanece en descripciones, nombres o texto no clasificado.
 ## Robustez
 
 El lector distingue archivos inexistentes, extensiones invalidas, rutas que
-son directorios, exceso de tamano, cifrado, falta de texto y contenido
-corrupto. El pipeline convierte errores esperados en mensajes publicos y
+son directorios, archivos de cero bytes, exceso de tamano, documentos sin
+paginas, cifrado, falta de texto, posible escaneo y contenido corrupto. Los
+escaneos parciales y las paginas vacias generan advertencias con numero de
+pagina. El pipeline convierte errores esperados en mensajes publicos y
 registra los inesperados sin exponer su detalle.
 
 Las secciones duplicadas acumulan contenido y generan una advertencia. Los
-fragmentos de correo se excluyen de la deteccion de URLs, y los contactos no
-se aceptan como titulo profesional.
+fragmentos de correo se excluyen de la deteccion de URLs, los rangos de anos
+no se aceptan como telefonos y los contactos no se usan como nombre o titulo.
+La limpieza retira controles y caracteres invisibles sin modificar el texto
+original conservado por el pipeline detallado.
+
+La deteccion de secciones admite aliases bilingues, numeracion y decoracion.
+Las combinaciones ambiguas se conservan sin clasificar, mientras que las
+secciones duplicadas mantienen el orden de su contenido.
+
+La extraccion estructurada separa experiencias y estudios cuando existen
+encabezados o fechas verificables. Empresa, puesto, institucion y titulacion
+solo se asignan con evidencia de vocabularios acotados. Las vinetas laborales
+se dividen entre responsabilidades y logros, y las habilidades se agrupan por
+etiquetas o vocabularios visibles.
+
+Idiomas, certificaciones, cursos y proyectos admiten formatos estructurados
+sin dejar de conservar las lineas libres. Las decisiones ambiguas producen
+advertencias indexadas que el pipeline incorpora a `metadata.warnings`.
+
+La normalizacion de fechas admite meses textuales, formatos numericos, anos
+aislados y rangos con aliases de actualidad. La coherencia se comprueba
+mediante intervalos mensuales para no comparar de forma incorrecta valores con
+distinta precision.
+
+Los modelos Pydantic rechazan tipos permisivos, fechas fuera del formato
+contractual, contacto no normalizado y metadatos invalidos. La deduplicacion
+solo se aplica a listas escalares donde conservar una repeticion exacta no
+aporta informacion; cada eliminacion genera una advertencia.
+
+El pipeline traduce errores de dominio y del sistema, mantiene un mensaje
+generico para fallos inesperados y valida tambien las salidas fallidas. Los
+logs explicitos no contienen el nombre del PDF. Si una fase posterior a la
+lectura falla, el texto y los metadatos tecnicos ya disponibles se conservan.
+
+Los constructores copian listas y categorias recibidas, por lo que modificar
+los resultados parciales despues del ensamblado no altera el JSON final.
 
 ## Pruebas
 
@@ -122,13 +160,17 @@ La suite combina:
 - pruebas unitarias por modulo;
 - integracion con lectura simulada;
 - PDFs sinteticos procesados por el recorrido real;
+- un layout sencillo de dos columnas y varias experiencias;
+- secciones y datos de contacto ausentes;
+- contactos precedidos por iconos y una extension de archivo falsa;
 - estados de Streamlit con `AppTest`;
+- recorrido responsive de la interfaz en Chrome local;
 - validacion del ejemplo documentado;
 - casos correctos y fallidos con el mismo modelo.
 
 `pytest-cov` esta configurado para cobertura de ramas y un minimo del 80% en
-`cv_analyzer`. La ejecucion final con Python 3.13.5 completo 75 casos y alcanzo
-una cobertura total observada del 93,36%.
+`cv_analyzer`. La ejecucion final con Python 3.13.5 completo 175 casos y
+alcanzo una cobertura total observada del 94,91%.
 
 ## Privacidad
 
@@ -151,13 +193,15 @@ El proyecto entrega:
 
 ## Limitaciones
 
-Los escaneos requieren OCR, los layouts complejos pueden alterar el orden del
-texto y cada bloque de experiencia o formacion se agrupa en una unica entrada.
-El detalle completo se mantiene en
+Los escaneos requieren OCR y los layouts complejos pueden alterar el orden del
+texto o impedir separar entradas sin pistas visibles. Los vocabularios de
+campos y habilidades son deliberadamente limitados. El detalle completo se
+mantiene en
 [`limitations.md`](limitations.md).
 
 ## Conclusion
 
-La version 0.1.0 establece una base modular y auditable. La siguiente evolucion
-debe centrarse en OCR, separacion de entradas y medicion de precision sin
-sacrificar el contrato ni la conservacion de informacion.
+La version 0.2.0 entrega una base modular, auditable y verificada desde una
+instalacion nueva. Las evoluciones posteriores pueden centrarse en OCR,
+segmentacion basada en layout y medicion de precision sin sacrificar el
+contrato ni la conservacion de informacion.

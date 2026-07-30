@@ -3,17 +3,30 @@
 Aplicacion local en Python que extrae texto de curriculums PDF, detecta sus
 secciones principales y devuelve un resultado JSON consistente. Incluye una
 interfaz Streamlit y una API de Python para integrar el pipeline en otros
-programas.
+programas. La version de entrega actual es la 0.2.0.
 
 ## Funcionalidades
 
-- Validacion de archivos PDF de hasta 10 MB.
+- Validacion de archivos PDF de hasta 10 MB, incluidos archivos vacios,
+  documentos sin paginas, contenido corrupto y proteccion por contrasena.
 - Extraccion de texto y metadatos con PyMuPDF.
-- Deteccion de secciones en espanol e ingles.
-- Extraccion conservadora de contacto, perfil, experiencia, formacion,
-  habilidades, idiomas, certificaciones, cursos y proyectos.
-- Normalizacion inicial de fechas.
-- Validacion estricta del resultado mediante Pydantic.
+- Deteccion de PDF basado solo en imagenes y advertencias por paginas sin
+  texto extraible.
+- Limpieza conservadora de espacios, controles y caracteres invisibles.
+- Extraccion de correo, telefono y enlaces con filtros contra falsos positivos.
+- Deteccion de secciones en espanol e ingles con alias, numeracion,
+  decoracion y encabezados bilingues equivalentes.
+- Extraccion estructurada de experiencia y formacion con entradas ordenadas,
+  campos identificables y conservacion del texto original del bloque.
+- Clasificacion de habilidades, idiomas, certificaciones, cursos y proyectos
+  mediante etiquetas, listas y separadores visibles.
+- Advertencias indexadas cuando una estructura no permite decidir sin
+  inventar informacion.
+- Normalizacion de fechas parciales y periodos actuales en espanol e ingles.
+- Validacion Pydantic estricta de fechas, contacto, metadatos y tipos.
+- Advertencias de coherencia y deduplicacion controlada de listas escalares.
+- Pipeline central con errores de sistema traducidos, logs sin nombres de
+  archivo y salida contractual tambien ante fallos intermedios.
 - Salida con el mismo contrato JSON ante exito o error.
 - Interfaz para cargar, revisar y descargar el analisis.
 - Procesamiento local sin consultas a servicios externos.
@@ -22,6 +35,10 @@ programas.
 
 - Python 3.11 o superior.
 - Un PDF con capa de texto. Los documentos escaneados requieren OCR.
+
+`pyproject.toml` es la fuente principal de dependencias. `requirements.txt`
+se mantiene como alternativa de instalacion sencilla e incluye las
+herramientas de prueba.
 
 ## Inicio rapido
 
@@ -44,9 +61,9 @@ instrucciones para Windows, Linux y macOS se detallan en
 ### Interfaz
 
 1. Seleccionar o arrastrar un unico archivo PDF.
-2. Pulsar **Analizar curriculum**.
-3. Revisar el resumen, el texto extraido y el JSON.
-4. Descargar el resultado.
+2. Pulsar **Analizar**.
+3. Revisar las advertencias, metricas, resumen, texto extraido y JSON.
+4. Descargar el resultado desde la cabecera del analisis.
 
 La copia temporal del PDF se elimina al terminar el procesamiento, tambien
 cuando ocurre un error.
@@ -87,7 +104,7 @@ python -m pytest
 
 La configuracion mide cobertura de ramas del paquete `cv_analyzer`, muestra
 lineas sin cubrir y exige un minimo del 80%. La verificacion final con Python
-3.13.5 completo 75 casos y obtuvo una cobertura total del 93,36%. Los casos se
+3.13.5 completo 175 casos y obtuvo una cobertura total del 94,91%. Los casos se
 describen en
 [`documentation/testing.md`](documentation/testing.md).
 
@@ -137,7 +154,10 @@ completo se documenta en
 - [Limitaciones](documentation/limitations.md)
 - [Mejoras futuras](documentation/improvements.md)
 - [Memoria tecnica](documentation/memoria.md)
+- [Informe final](documentation/final_report.md)
 - [Planificacion](documentation/planning.md)
+- [Heuristicas](documentation/heuristics.md)
+- [Decision sobre PyMuPDF](documentation/decisions/0001-pymupdf.md)
 - [Changelog](CHANGELOG.md)
 
 ## Licencia
