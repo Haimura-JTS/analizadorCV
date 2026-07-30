@@ -73,3 +73,33 @@ EXPERIENCE
 Second role retained
 """,
 )
+
+
+MULTI_EXPERIENCE_CV_PAGES = (
+    """\
+Morgan Price
+Software Engineer
+EXPERIENCE
+Northwind Labs - Backend Developer
+January 2021 - December 2022
+- Built internal APIs
+Contoso - Senior Engineer
+2023 - Present
+- Led the platform team
+SKILLS
+Python, SQL
+""",
+)
+
+
+SPARSE_CV_PAGES = (
+    """\
+Riley Stone
+Product Designer
+EDUCATION
+Bachelor of Design | Design Institute
+2018 - 2022
+SKILLS
+Figma
+""",
+)
