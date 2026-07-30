@@ -69,6 +69,17 @@ APP_STYLES = """
         border-radius: 6px;
     }
 
+    [data-testid="stButton"] button:focus-visible,
+    [data-testid="stDownloadButton"] button:focus-visible {
+        outline: 3px solid #d49a28;
+        outline-offset: 2px;
+    }
+
+    [data-testid="stCaptionContainer"],
+    [data-testid="stMarkdownContainer"] p {
+        overflow-wrap: anywhere;
+    }
+
     .privacy-note {
         border-left: 2px solid #d49a28;
         color: #52605c;
@@ -126,6 +137,9 @@ PROJECT_FIELDS = {
     "description": "Descripción",
     "technologies": "Tecnologías",
     "url": "URL",
+}
+TABLE_VALUE_LABELS = {
+    "in_progress": "En curso",
 }
 
 
@@ -269,6 +283,26 @@ def _render_result(
     metadata = _as_dict(result.get("metadata"))
     errors = _as_string_list(metadata.get("errors"))
     warnings = _as_string_list(metadata.get("warnings"))
+    json_document = serialize_cv_result(result)
+
+    heading_column, download_column = st.columns(
+        [4, 1],
+        gap="medium",
+        vertical_alignment="center",
+    )
+    with heading_column:
+        st.subheader("Resultado")
+    with download_column:
+        st.download_button(
+            "Descargar JSON",
+            data=json_document,
+            file_name=build_download_name(metadata.get("source_file")),
+            mime="application/json",
+            type="primary",
+            icon=":material/download:",
+            on_click="ignore",
+            width="stretch",
+        )
 
     if _processed_successfully(result):
         st.success(
@@ -281,10 +315,16 @@ def _render_result(
             icon=":material/error:",
         )
 
-    for error in errors:
-        st.error(error, icon=":material/error:")
-    for warning in warnings:
-        st.warning(warning, icon=":material/warning:")
+    if errors:
+        st.error(
+            _format_message_group("Se detectaron errores", errors),
+            icon=":material/error:",
+        )
+    if warnings:
+        st.warning(
+            _format_message_group("Se detectaron advertencias", warnings),
+            icon=":material/warning:",
+        )
 
     _render_metrics(result, metadata, warnings)
 
@@ -298,25 +338,13 @@ def _render_result(
     with json_tab:
         st.json(result, expanded=2)
 
-    json_document = serialize_cv_result(result)
-    st.download_button(
-        "Descargar JSON",
-        data=json_document,
-        file_name=build_download_name(metadata.get("source_file")),
-        mime="application/json",
-        type="primary",
-        icon=":material/download:",
-        on_click="ignore",
-        width="stretch",
-    )
-
 
 def _render_metrics(
     result: dict[str, object],
     metadata: dict[str, object],
     warnings: list[str],
 ) -> None:
-    page_count = metadata.get("page_count")
+    page_count = _as_int(metadata.get("page_count"))
     section_items = sum(
         len(_as_dict_list(result.get(section_name)))
         for section_name in (
@@ -340,7 +368,7 @@ def _render_metrics(
     )
     columns[1].metric(
         "Páginas",
-        str(page_count) if isinstance(page_count, int) else "N/D",
+        str(page_count) if page_count is not None and page_count >= 0 else "N/D",
     )
     columns[2].metric("Elementos", str(section_items + skill_count))
     columns[3].metric("Advertencias", str(len(warnings)))
@@ -490,11 +518,23 @@ def _as_dict_list(value: object) -> list[dict[str, object]]:
 def _as_string_list(value: object) -> list[str]:
     if not isinstance(value, list):
         return []
-    return [item for item in value if isinstance(item, str)]
+    normalized_items: list[str] = []
+    seen_items: set[str] = set()
+
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        normalized_item = item.strip()
+        if not normalized_item or normalized_item in seen_items:
+            continue
+        normalized_items.append(normalized_item)
+        seen_items.add(normalized_item)
+
+    return normalized_items
 
 
 def _as_int(value: object) -> int | None:
-    return value if isinstance(value, int) else None
+    return value if type(value) is int else None
 
 
 def _display_value(
@@ -511,7 +551,15 @@ def _format_table_value(value: object) -> str:
         return "Sí" if value else "No"
     if isinstance(value, list):
         return ", ".join(str(item) for item in value)
-    return str(value)
+    string_value = str(value)
+    return TABLE_VALUE_LABELS.get(string_value, string_value)
+
+
+def _format_message_group(title: str, messages: list[str]) -> str:
+    if len(messages) == 1:
+        return messages[0]
+    message_list = "\n".join(f"- {message}" for message in messages)
+    return f"{title}:\n\n{message_list}"
 
 
 if __name__ == "__main__":

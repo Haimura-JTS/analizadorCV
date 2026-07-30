@@ -15,6 +15,7 @@ from tempfile import TemporaryDirectory
 
 DEFAULT_UPLOAD_NAME = "curriculum.pdf"
 DEFAULT_DOWNLOAD_STEM = "curriculum"
+MAX_SAFE_FILE_NAME_LENGTH = 120
 INVALID_FILE_NAME_PATTERN = re.compile(r'[<>:"/\\|?*\x00-\x1F]')
 WINDOWS_RESERVED_NAMES = {
     "CON",
@@ -91,7 +92,7 @@ def format_file_size(size_bytes: int | None) -> str:
     Returns:
         Tamano formateado con B, KB o MB.
     """
-    if size_bytes is None or size_bytes < 0:
+    if type(size_bytes) is not int or size_bytes < 0:
         return "No disponible"
     if size_bytes < 1024:
         return f"{size_bytes} B"
@@ -107,7 +108,25 @@ def _safe_file_name(original_name: str) -> str:
 
     if candidate in {"", ".", ".."}:
         return DEFAULT_UPLOAD_NAME
+    candidate = _truncate_file_name(candidate)
     if Path(candidate).stem.upper() in WINDOWS_RESERVED_NAMES:
-        return f"_{candidate}"
+        return _truncate_file_name(f"_{candidate}")
 
     return candidate
+
+
+def _truncate_file_name(file_name: str) -> str:
+    if len(file_name) <= MAX_SAFE_FILE_NAME_LENGTH:
+        return file_name
+
+    suffix = Path(file_name).suffix
+    if len(suffix) >= MAX_SAFE_FILE_NAME_LENGTH:
+        suffix = ""
+
+    stem = file_name[:-len(suffix)] if suffix else file_name
+    available_stem_length = MAX_SAFE_FILE_NAME_LENGTH - len(suffix)
+    truncated_stem = stem[:available_stem_length].rstrip(" .")
+    if not truncated_stem:
+        truncated_stem = DEFAULT_DOWNLOAD_STEM[:available_stem_length]
+
+    return f"{truncated_stem}{suffix}"

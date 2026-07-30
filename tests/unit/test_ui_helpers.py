@@ -3,6 +3,7 @@ import json
 import pytest
 
 from cv_analyzer.ui_helpers import build_download_name, format_file_size
+from cv_analyzer.ui_helpers import MAX_SAFE_FILE_NAME_LENGTH
 from cv_analyzer.ui_helpers import serialize_cv_result
 from cv_analyzer.ui_helpers import temporary_uploaded_pdf
 
@@ -33,6 +34,20 @@ def test_temporary_uploaded_pdf_is_removed_after_exception() -> None:
     assert not temporary_directory.exists()
 
 
+def test_temporary_uploaded_pdf_limits_long_names_and_preserves_suffix() -> None:
+    original_name = f"{'a' * 200}.pdf"
+
+    with temporary_uploaded_pdf(b"pdf", original_name) as file_path:
+        assert len(file_path.name) == MAX_SAFE_FILE_NAME_LENGTH
+        assert file_path.suffix == ".pdf"
+
+
+def test_temporary_uploaded_pdf_prefixes_windows_reserved_name() -> None:
+    with temporary_uploaded_pdf(b"pdf", "CON.pdf") as file_path:
+        assert file_path.name == "_CON.pdf"
+        assert len(file_path.name) <= MAX_SAFE_FILE_NAME_LENGTH
+
+
 def test_serialize_cv_result_preserves_unicode_and_is_valid_json() -> None:
     result: dict[str, object] = {
         "personal_data": {"full_name": "José García"},
@@ -51,6 +66,7 @@ def test_serialize_cv_result_preserves_unicode_and_is_valid_json() -> None:
         ("ana.pdf", "ana_analizado.json"),
         ("cv.final.pdf", "cv.final_analizado.json"),
         ("../../private.pdf", "private_analizado.json"),
+        ("CON.pdf", "_CON_analizado.json"),
         (None, "curriculum_analizado.json"),
     ],
 )
@@ -65,6 +81,8 @@ def test_build_download_name(
     ("size_bytes", "expected_label"),
     [
         (None, "No disponible"),
+        (True, "No disponible"),
+        (-1, "No disponible"),
         (512, "512 B"),
         (1024, "1.0 KB"),
         (1024 * 1024, "1.0 MB"),
